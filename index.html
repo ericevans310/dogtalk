@@ -579,6 +579,15 @@
       .then(data => { QUOTES_MAP = data.quotes; DEFAULT_QUOTES = data.defaults; })
       .catch(err => console.warn('[dogtalk] quotes.json failed to load:', err));
 
+    // Pre-generated voice clips (ElevenLabs). Manifest format:
+    //   { "<class>": { "<original quote>": "voices/<slug>/<hash>.mp3", ... }, ... }
+    // Quotes containing {NAME} are absent and fall back to speechSynthesis.
+    let voiceManifest = {};
+    fetch('voices/manifest.json')
+      .then(r => r.ok ? r.json() : {})
+      .then(m => { voiceManifest = m; })
+      .catch(() => {});
+
     // ── Name helpers ──────────────────────────────────────────────────────────
     function getDogName() { return localStorage.getItem('dogName') || 'me'; }
 
@@ -662,11 +671,55 @@
       return str.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FEFF}]|[\u{1F300}-\u{1FAD6}]/gu, '').replace(/\s+/g,' ').trim();
     }
 
-    function speakQuote(quote, cls) {
-      if (!quote || !ttsEnabled || !window.speechSynthesis) return;
+    // Lazy-load + cache decoded buffers for pre-generated voice MP3s.
+    const voiceBufferCache = {};
+    async function getVoiceBuffer(url) {
+      if (voiceBufferCache[url] === false) return null;
+      if (voiceBufferCache[url]) return voiceBufferCache[url];
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(r.status);
+        const decoded = await audioCtx.decodeAudioData(await r.arrayBuffer());
+        voiceBufferCache[url] = decoded;
+        return decoded;
+      } catch (e) {
+        voiceBufferCache[url] = false;
+        return null;
+      }
+    }
+
+    function lookupVoiceUrl(cls, quote) {
+      return (voiceManifest[cls] && voiceManifest[cls][quote])
+          || (voiceManifest._default && voiceManifest._default[quote])
+          || null;
+    }
+
+    async function playVoiceClip(quote, cls) {
+      if (!audioCtx) return false;
+      const url = lookupVoiceUrl(cls, quote);
+      if (!url) return false;
+      const buf = await getVoiceBuffer(url);
+      if (!buf) return false;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 1.0;
+      src.connect(gain).connect(audioCtx.destination);
+      src.start(0);
+      return true;
+    }
+
+    async function speakQuote(quote, cls) {
+      if (!quote || !ttsEnabled) return;
       const resolved = resolveQuote(quote);
       if (resolved === lastSpokenQuote) return;
       lastSpokenQuote = resolved;
+
+      // Pre-generated MP3 first — works on iOS, sounds the same on Mac.
+      if (await playVoiceClip(quote, cls)) return;
+
+      // Fallback: native speechSynthesis (Mac OK, silent on iOS).
+      if (!window.speechSynthesis) return;
       const clean = stripEmoji(resolved);
       if (!clean) return;
       window.speechSynthesis.cancel();
