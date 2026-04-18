@@ -109,7 +109,6 @@
     }
     .modal-box input[type="text"]::placeholder { color: #666; }
 
-    /* gender radios */
     .gender-row { display: flex; justify-content: center; gap: 16px; margin-bottom: 20px; }
     .gender-btn {
       flex: 1; padding: 10px; border-radius: 12px; border: 2px solid #444;
@@ -166,6 +165,84 @@
       font-weight: 700; cursor: pointer;
     }
 
+    /* ── Voice Lab modal ────────────────────────────────────── */
+    #voice-lab .modal-box {
+      max-width: 400px; max-height: 90vh; overflow-y: auto;
+      text-align: left; padding: 22px 20px; width: 95%;
+    }
+    #voice-lab h2 { text-align: center; margin-bottom: 6px; }
+    .vl-tagline {
+      font-size: 12px; color: #888; text-align: center;
+      line-height: 1.5; margin-bottom: 14px;
+    }
+    .vl-note {
+      font-size: 12px; color: #FFD700; background: rgba(255,215,0,0.08);
+      border-radius: 10px; padding: 10px 12px; line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .vl-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.9px;
+      text-transform: uppercase; color: #666; margin: 14px 0 8px;
+    }
+    .vl-section-label span { font-weight: 400; text-transform: none; letter-spacing: 0; color: #444; }
+    .vl-voice-select {
+      width: 100%; padding: 10px 12px; border-radius: 12px; border: none;
+      background: #2d2d2d; color: #fff; font-size: 13px; margin-bottom: 4px;
+      -webkit-appearance: none; appearance: none;
+    }
+    .vl-slider-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+    }
+    .vl-slider-name {
+      font-size: 12px; color: #bbb; width: 110px; flex-shrink: 0; line-height: 1.3;
+    }
+    .vl-slider-row input[type="range"] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px; background: #444; outline: none;
+    }
+    .vl-slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px;
+      border-radius: 50%; background: #FFD700; cursor: pointer;
+    }
+    .vl-slider-val {
+      font-size: 11px; color: #FFD700; width: 52px; text-align: right;
+      font-variant-numeric: tabular-nums; flex-shrink: 0;
+    }
+    .vl-ios-note {
+      font-size: 11px; color: #555; line-height: 1.5; margin: 10px 0;
+      font-style: italic; padding: 8px 10px; border-left: 2px solid #333;
+    }
+    .vl-preset-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .vl-preset-btn {
+      flex: 1; padding: 9px 4px; border-radius: 10px;
+      border: 1.5px solid #444; background: transparent;
+      color: #ccc; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .vl-preset-btn:active { background: #2a2a2a; }
+    .vl-preview-row { display: flex; gap: 8px; margin: 14px 0 12px; }
+    .vl-preview-input {
+      flex: 1; padding: 10px 12px; border-radius: 12px; border: none;
+      background: #2d2d2d; color: #fff; font-size: 13px; outline: none;
+    }
+    .vl-preview-btn {
+      padding: 10px 14px; border-radius: 12px; border: none;
+      background: #333; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .vl-preview-btn:active { background: #444; }
+    .vl-save-row { display: flex; gap: 7px; margin-bottom: 10px; flex-wrap: wrap; }
+    .vl-save-btn {
+      flex: 1; padding: 10px 6px; border-radius: 12px; border: none;
+      background: #1a2e1a; color: #6FE06F; font-size: 11px; font-weight: 700;
+      cursor: pointer; min-width: 88px; text-align: center;
+    }
+    .vl-save-btn:active { background: #253525; }
+    .vl-reset-btn {
+      width: 100%; padding: 10px; border-radius: 12px;
+      border: 1px solid #333; background: transparent;
+      color: #666; font-size: 13px; cursor: pointer; margin-bottom: 4px;
+    }
+
     #error {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
       color: #fff; font-family: -apple-system, sans-serif;
@@ -209,6 +286,7 @@
       </div>
       <button class="modal-primary-btn" id="name-submit">Let's go! 🐾</button>
       <button class="modal-close-btn" id="name-cancel" style="display:none">Cancel</button>
+      <button class="modal-close-btn" id="open-voice-lab-btn" style="color:#FFD700;margin-top:8px;display:none">🎤 Voice Lab</button>
     </div>
   </div>
 
@@ -219,6 +297,86 @@
       <div id="coll-grid"></div>
       <div id="coll-info"></div>
       <button id="coll-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Voice Lab modal -->
+  <div id="voice-lab" class="modal-backdrop">
+    <div class="modal-box">
+      <h2>🎤 Voice Lab</h2>
+      <p class="vl-tagline">Find the funniest dog voice before investing in AI speech.</p>
+      <p class="vl-note">💡 Tip: Novelty voices like <strong>Bells</strong>, <strong>Trinoids</strong>, or <strong>Organ</strong> make the biggest difference. Download more: <em>iPhone Settings › Accessibility › Spoken Content › Voices</em></p>
+
+      <div class="vl-section-label">Voice</div>
+      <select id="vl-voice" class="vl-voice-select">
+        <option value="">— System Default —</option>
+      </select>
+
+      <div class="vl-section-label">Native TTS <span>— always works on all devices</span></div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Pitch</span>
+        <input type="range" id="sl-pitch" min="0" max="2" step="0.05" value="1.6" />
+        <span class="vl-slider-val" id="vv-pitch">1.60</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Rate</span>
+        <input type="range" id="sl-rate" min="0.5" max="2" step="0.05" value="1.25" />
+        <span class="vl-slider-val" id="vv-rate">1.25</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Post-pitch shift<br><span style="font-size:10px;color:#555">(combined w/ Pitch)</span></span>
+        <input type="range" id="sl-pitchshift" min="-1200" max="1200" step="50" value="400" />
+        <span class="vl-slider-val" id="vv-pitchshift">+400¢</span>
+      </div>
+
+      <div class="vl-section-label">Web Audio Effects <span>— saved; no-op on iOS Safari*</span></div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Chorus<br><span style="font-size:10px;color:#555">multi-dog effect</span></span>
+        <input type="range" id="sl-chorus" min="0" max="1" step="0.05" value="0.2" />
+        <span class="vl-slider-val" id="vv-chorus">0.20</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Tremolo<br><span style="font-size:10px;color:#555">panting pulse</span></span>
+        <input type="range" id="sl-tremolo" min="0" max="1" step="0.05" value="0.3" />
+        <span class="vl-slider-val" id="vv-tremolo">0.30</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Lowpass cutoff<br><span style="font-size:10px;color:#555">muzzle effect</span></span>
+        <input type="range" id="sl-lowpass" min="300" max="8000" step="100" value="6000" />
+        <span class="vl-slider-val" id="vv-lowpass">6000Hz</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Reverb<br><span style="font-size:10px;color:#555">big room</span></span>
+        <input type="range" id="sl-reverb" min="0" max="1" step="0.05" value="0.1" />
+        <span class="vl-slider-val" id="vv-reverb">0.10</span>
+      </div>
+      <div class="vl-slider-row">
+        <span class="vl-slider-name">Distortion<br><span style="font-size:10px;color:#555">gravelly edge</span></span>
+        <input type="range" id="sl-distortion" min="0" max="1" step="0.05" value="0" />
+        <span class="vl-slider-val" id="vv-distortion">0.00</span>
+      </div>
+      <p class="vl-ios-note">* iOS Safari routes TTS through the system audio engine, bypassing Web Audio entirely. Chorus/Tremolo/Reverb/Distortion/Lowpass are saved in your profile and will activate when a Web Audio TTS bridge becomes available. Voice + Pitch + Rate + Post-pitch shift are the levers that work right now.</p>
+
+      <div class="vl-section-label">Presets</div>
+      <div class="vl-preset-row">
+        <button class="vl-preset-btn" data-preset="Tiny Puppy">🐶 Tiny Puppy</button>
+        <button class="vl-preset-btn" data-preset="Big Dog">🐕 Big Dog</button>
+        <button class="vl-preset-btn" data-preset="Old Dog">🦴 Old Dog</button>
+      </div>
+
+      <div class="vl-section-label">Preview</div>
+      <div class="vl-preview-row">
+        <input type="text" id="vl-preview-text" class="vl-preview-input" value="" autocomplete="off" />
+        <button id="vl-preview-btn" class="vl-preview-btn">▶ Speak</button>
+      </div>
+
+      <div class="vl-save-row">
+        <button class="vl-save-btn" data-save="dog">🐾 Save as Dog</button>
+        <button class="vl-save-btn" data-save="cat">🐈 Save as Cat</button>
+        <button class="vl-save-btn" data-save="person">👤 Save as Person</button>
+      </div>
+      <button id="vl-reset" class="vl-reset-btn">Reset All to Defaults</button>
+      <button id="vl-close" class="modal-close-btn">Close Voice Lab</button>
     </div>
   </div>
 
@@ -380,7 +538,6 @@
       'scissors':'✂️','teddy bear':'🧸','hair drier':'💨','toothbrush':'🪥',
     };
 
-    // All 80 COCO-SSD classes in order (for collection grid)
     const ALL_CLASSES = [
       'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat',
       'traffic light','fire hydrant','stop sign','parking meter','bench',
@@ -395,7 +552,7 @@
       'hair drier','toothbrush',
     ];
 
-    // ── Dog-POV quotes (dog's name via {NAME}) ────────────────────────────────
+    // ── Dog-POV quotes ────────────────────────────────────────────────────────
     const QUOTES_MAP = {
       'person':       ["PET ME RIGHT NOW 🐾","YOU'RE HOME!! YOU'RE HOME!!","Walk time? WALK TIME??","Belly rubs. Not optional.","I missed you. All 5 minutes.","Did someone say TREAT??","I love you so much it hurts.","Please. I'm starving. (5 min ago)","WAIT — are you {NAME}'s human??","Do you have treats for {NAME}?","{NAME} has been SO good today!"],
       'dog':          ["NEW FRIEND!! I LOVE YOU!!","WHO ARE YOU I LOVE YOU","Wanna sniff butts? I'll go first.","YOU'RE ALSO A DOG!! WOW!!","Play?? LET'S PLAY!!","Another good boy detected 🐾","I would die for you and I just met you.","I'M {NAME}! PET ME!!","{NAME} SAYS HI!!","It's me, {NAME}!! Your favorite dog!!","{NAME} wants treats. Urgently."],
@@ -507,11 +664,22 @@
       'teddy bear':   'teddy-bear.mp3','backpack':'dog-puppy.mp3','suitcase':'dog-puppy.mp3',
     };
 
-    // ── TTS ───────────────────────────────────────────────────────────────────
-    const VOICE_PROFILES = {
-      'dog':      { pitch: 1.6,  rate: 1.25 },
-      'cat':      { pitch: 0.8,  rate: 0.95 },
-      'person':   { pitch: 1.0,  rate: 1.0  },
+    // ── Voice Lab profiles ────────────────────────────────────────────────────
+    // Default profiles for dog/cat/person. Other classes fall back to LEGACY_VOICE_PROFILES.
+    const DEFAULT_VL_PROFILES = {
+      dog:    { voiceName:'', pitch:1.6,  rate:1.25, pitchShiftCents:400,  chorus:0.2, tremolo:0.3,  lowpassHz:6000, reverb:0.1, distortion:0    },
+      cat:    { voiceName:'', pitch:0.8,  rate:0.95, pitchShiftCents:0,    chorus:0,   tremolo:0,    lowpassHz:8000, reverb:0.2, distortion:0.1  },
+      person: { voiceName:'', pitch:1.0,  rate:1.0,  pitchShiftCents:0,    chorus:0,   tremolo:0,    lowpassHz:8000, reverb:0,   distortion:0    },
+    };
+
+    const VL_PRESETS = {
+      'Tiny Puppy': { pitch:1.8,  rate:1.3,  pitchShiftCents:400,  chorus:0.2, tremolo:0.3,  lowpassHz:6000, reverb:0.1, distortion:0    },
+      'Big Dog':    { pitch:0.6,  rate:0.85, pitchShiftCents:-300,  chorus:0,   tremolo:0,    lowpassHz:3000, reverb:0.3, distortion:0.15 },
+      'Old Dog':    { pitch:0.8,  rate:0.75, pitchShiftCents:-100,  chorus:0,   tremolo:0.15, lowpassHz:2500, reverb:0.2, distortion:0.25 },
+    };
+
+    // Legacy fallback for non-dog/cat/person classes
+    const LEGACY_VOICE_PROFILES = {
       'bird':     { pitch: 1.8,  rate: 1.4  },
       'cow':      { pitch: 0.5,  rate: 0.75 },
       'horse':    { pitch: 0.7,  rate: 0.9  },
@@ -521,6 +689,20 @@
       'default':  { pitch: 1.0,  rate: 1.0  },
     };
 
+    function loadVoiceProfile(cls) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(cls + 'VoiceProfile') || 'null');
+        if (saved) return { ...(DEFAULT_VL_PROFILES[cls] || DEFAULT_VL_PROFILES.dog), ...saved };
+      } catch {}
+      return { ...(DEFAULT_VL_PROFILES[cls] || DEFAULT_VL_PROFILES.dog) };
+    }
+
+    // Convert cents offset to native pitch multiplier, clamped to 0–2
+    function applyPitchShift(basePitch, cents) {
+      return Math.max(0, Math.min(2, basePitch * Math.pow(2, cents / 1200)));
+    }
+
+    // ── TTS ───────────────────────────────────────────────────────────────────
     let ttsEnabled = localStorage.getItem('ttsEnabled') !== 'false';
     let lastSpokenQuote = null;
 
@@ -537,19 +719,39 @@
       if (!clean) return;
       window.speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(clean);
-      const profile = VOICE_PROFILES[cls] || VOICE_PROFILES['default'];
-      utter.pitch = profile.pitch;
-      utter.rate  = profile.rate;
       const voices = window.speechSynthesis.getVoices();
-      const englishVoice = voices.find(v => v.lang.startsWith('en'));
-      if (englishVoice) utter.voice = englishVoice;
+
+      const labClasses = ['dog', 'cat', 'person'];
+      if (labClasses.includes(cls)) {
+        // Use saved Voice Lab profile (or default) for dog/cat/person
+        const profile = loadVoiceProfile(cls);
+        utter.pitch = applyPitchShift(profile.pitch, profile.pitchShiftCents || 0);
+        utter.rate  = Math.max(0.1, Math.min(10, profile.rate));
+        if (profile.voiceName) {
+          const found = voices.find(v => v.name === profile.voiceName);
+          if (found) utter.voice = found;
+        } else {
+          const eng = voices.find(v => v.lang.startsWith('en'));
+          if (eng) utter.voice = eng;
+        }
+        // Note: chorus/tremolo/reverb/distortion/lowpass saved in profile but not yet
+        // applied here — iOS Safari TTS cannot be routed through Web Audio nodes.
+      } else {
+        // Legacy profiles for animals/other
+        const profile = LEGACY_VOICE_PROFILES[cls] || LEGACY_VOICE_PROFILES['default'];
+        utter.pitch = profile.pitch;
+        utter.rate  = profile.rate;
+        const eng = voices.find(v => v.lang.startsWith('en'));
+        if (eng) utter.voice = eng;
+      }
+
       window.speechSynthesis.speak(utter);
     }
 
     if (window.speechSynthesis) {
       window.speechSynthesis.addEventListener('voiceschanged', () => {
         const voices = window.speechSynthesis.getVoices();
-        console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`).join(', '));
+        console.log('Available voices:', voices.map(v => `${v.name} (${v.lang}${v.localService ? '' : ' network'})`).join(', '));
       });
     }
 
@@ -584,7 +786,6 @@
         src.start(0);
         return;
       }
-      // Synthesized fallback: C5 (523Hz) → G5 (784Hz), 150ms each
       const osc  = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain); gain.connect(audioCtx.destination);
@@ -620,8 +821,6 @@
           tile.title = cls;
           tile.addEventListener('click', () => {
             const q = resolveQuote(pickQuote(cls));
-            const soundFile = SOUND_MAP[cls];
-            const sf = Array.isArray(soundFile) ? soundFile[0] : soundFile;
             collInfo.textContent = `${LABEL_MAP[cls] || '?'} ${cls} — "${q}"`;
             collInfo.className = 'visible';
           });
@@ -668,7 +867,6 @@
       const maxOffset = buf.duration > 4 ? Math.min(2, buf.duration - 3) : 0;
       const startOffset = maxOffset > 0 ? Math.random() * maxOffset : 0;
 
-      // Capture class/quote at call time for TTS timing
       const capturedClass = cls;
       const capturedQuote = activeQuote;
 
@@ -677,7 +875,6 @@
       source.connect(audioCtx.destination);
       source.onended = () => {
         isPlaying = false; currentSource = null; lastPlayedTime = Date.now();
-        // Speak after sound finishes, only if class hasn't changed
         if (activeClass === capturedClass && capturedQuote) {
           speakQuote(capturedQuote, capturedClass);
         }
@@ -751,12 +948,10 @@
         try {
           const preds = await cocoModel.detect(video);
 
-          // Priority: prefer animals/person over background objects
           const priorityPred = preds.filter(p => PRIORITY_CLASSES.includes(p.class) && p.score >= PRIORITY_CONF).sort((a,b) => b.score-a.score)[0] || null;
           const fallbackPred = !priorityPred ? (preds.filter(p => p.score >= MIN_CONF)[0] || null) : null;
           const best = priorityPred || fallbackPred;
 
-          // Track absence of active priority subject
           const isPriorityActive = activeClass && PRIORITY_CLASSES.includes(activeClass);
           if (isPriorityActive) {
             const stillSeen = preds.some(p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF);
@@ -767,7 +962,6 @@
           const prioritySubjectGone = priorityAbsentCount >= PRIORITY_ABSENT_FRAMES;
           const canSwitch = !isPriorityActive || (priorityLockExpired && prioritySubjectGone);
 
-          // Rolling vote
           voteBuffer.push(best ? { cls: best.class, bbox: best.bbox } : null);
           if (voteBuffer.length > VOTE_WINDOW) voteBuffer.shift();
           const counts = {};
@@ -783,12 +977,11 @@
               priorityAbsentCount = 0;
               activeQuote = pickQuote(winner);
               activeLabel = null;
-              checkDiscovery(winner);  // ← discovery check on each new class
+              checkDiscovery(winner);
             }
             const fresh = [...voteBuffer].reverse().find(v => v && v.cls === winner);
             if (fresh) activeBbox = fresh.bbox;
 
-            // MobileNet crop (every 3rd frame)
             mnFrameCount++;
             if (mnModel && activeBbox && mnFrameCount % 3 === 0) {
               if (cropToBbox(activeBbox)) {
@@ -843,6 +1036,7 @@
       btnBoy.classList.toggle('selected', selectedGender === 'boy');
       btnGirl.classList.toggle('selected', selectedGender === 'girl');
       nameCancelBtn.style.display = fromSettings ? 'block' : 'none';
+      document.getElementById('open-voice-lab-btn').style.display = fromSettings ? 'block' : 'none';
       nameModal.classList.add('open');
     }
 
@@ -860,11 +1054,15 @@
       localStorage.setItem('dogName', name);
       localStorage.setItem('dogGender', selectedGender);
       closeNameModal();
-      // Update tap-to-start title
       tapTitle.textContent = `${name} wants to talk!`;
     });
 
     nameCancelBtn.addEventListener('click', closeNameModal);
+
+    document.getElementById('open-voice-lab-btn').addEventListener('click', () => {
+      closeNameModal();
+      openVoiceLab();
+    });
 
     // ── Top-right controls ────────────────────────────────────────────────────
     let controlsFadeTimer = null;
@@ -874,7 +1072,21 @@
       controlsFadeTimer = setTimeout(() => topControls.classList.remove('lit'), 3000);
     });
 
-    settingsBtnEl.addEventListener('click', (e) => { e.stopPropagation(); openNameModal(true); });
+    // Settings gear: tap 5× within 2s → Voice Lab; otherwise open name settings
+    let gearTapTimes = [];
+    settingsBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const now = Date.now();
+      gearTapTimes = gearTapTimes.filter(t => now - t < 2000);
+      gearTapTimes.push(now);
+      if (gearTapTimes.length >= 5) {
+        gearTapTimes = [];
+        closeNameModal();
+        openVoiceLab();
+        return;
+      }
+      openNameModal(true);
+    });
 
     trophyBtnEl.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -891,7 +1103,163 @@
       if (!ttsEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
     });
 
-    // ── Init: show naming modal on first launch ───────────────────────────────
+    // ── Voice Lab ─────────────────────────────────────────────────────────────
+    const voiceLabEl    = document.getElementById('voice-lab');
+    const vlVoiceSelect = document.getElementById('vl-voice');
+    const vlPreviewText = document.getElementById('vl-preview-text');
+    const vlPreviewBtn  = document.getElementById('vl-preview-btn');
+    const vlCloseBtn    = document.getElementById('vl-close');
+    const vlResetBtn    = document.getElementById('vl-reset');
+
+    // slider key → { inputId, valueId, suffix, decimals }
+    const VL_SLIDER_CONFIG = {
+      pitch:           { inputId:'sl-pitch',      valueId:'vv-pitch',      suffix:'',    decimals:2 },
+      rate:            { inputId:'sl-rate',        valueId:'vv-rate',       suffix:'',    decimals:2 },
+      pitchShiftCents: { inputId:'sl-pitchshift',  valueId:'vv-pitchshift', suffix:'¢',   decimals:0, signed:true },
+      chorus:          { inputId:'sl-chorus',      valueId:'vv-chorus',     suffix:'',    decimals:2 },
+      tremolo:         { inputId:'sl-tremolo',     valueId:'vv-tremolo',    suffix:'',    decimals:2 },
+      lowpassHz:       { inputId:'sl-lowpass',     valueId:'vv-lowpass',    suffix:'Hz',  decimals:0 },
+      reverb:          { inputId:'sl-reverb',      valueId:'vv-reverb',     suffix:'',    decimals:2 },
+      distortion:      { inputId:'sl-distortion',  valueId:'vv-distortion', suffix:'',    decimals:2 },
+    };
+
+    function updateSliderDisplay(key) {
+      const cfg = VL_SLIDER_CONFIG[key];
+      const el  = document.getElementById(cfg.inputId);
+      const vv  = document.getElementById(cfg.valueId);
+      if (!el || !vv) return;
+      const val = parseFloat(el.value);
+      const str = val.toFixed(cfg.decimals);
+      vv.textContent = (cfg.signed && val > 0 ? '+' : '') + str + cfg.suffix;
+    }
+
+    function loadProfileIntoSliders(profile) {
+      vlVoiceSelect.value = profile.voiceName || '';
+      Object.keys(VL_SLIDER_CONFIG).forEach(key => {
+        const el = document.getElementById(VL_SLIDER_CONFIG[key].inputId);
+        if (el && profile[key] !== undefined) el.value = profile[key];
+        updateSliderDisplay(key);
+      });
+    }
+
+    function readSlidersToProfile() {
+      const p = { voiceName: vlVoiceSelect.value };
+      Object.keys(VL_SLIDER_CONFIG).forEach(key => {
+        p[key] = parseFloat(document.getElementById(VL_SLIDER_CONFIG[key].inputId).value);
+      });
+      return p;
+    }
+
+    function populateVoiceDropdown() {
+      const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      // preserve current selection if possible
+      const current = vlVoiceSelect.value;
+      vlVoiceSelect.innerHTML = '<option value="">— System Default —</option>';
+      voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        const flag = v.localService ? '' : ' ☁';
+        opt.textContent = `${v.name} (${v.lang})${flag}`;
+        vlVoiceSelect.appendChild(opt);
+      });
+      vlVoiceSelect.value = current;
+    }
+
+    function openVoiceLab() {
+      populateVoiceDropdown();
+      // voices may load async on some browsers
+      if (window.speechSynthesis && !window.speechSynthesis.getVoices().length) {
+        window.speechSynthesis.addEventListener('voiceschanged', populateVoiceDropdown, { once: true });
+      }
+      // Load dog profile into sliders by default
+      loadProfileIntoSliders(loadVoiceProfile('dog'));
+      vlPreviewText.value = `I'M ${getDogName().toUpperCase()}!! PET ME!!`;
+      voiceLabEl.classList.add('open');
+    }
+
+    function closeVoiceLab() {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      voiceLabEl.classList.remove('open');
+    }
+
+    // Attach slider listeners
+    Object.keys(VL_SLIDER_CONFIG).forEach(key => {
+      const el = document.getElementById(VL_SLIDER_CONFIG[key].inputId);
+      if (el) el.addEventListener('input', () => updateSliderDisplay(key));
+    });
+
+    // Presets
+    document.querySelectorAll('.vl-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = VL_PRESETS[btn.dataset.preset];
+        if (!preset) return;
+        Object.keys(VL_SLIDER_CONFIG).forEach(key => {
+          if (preset[key] !== undefined) {
+            document.getElementById(VL_SLIDER_CONFIG[key].inputId).value = preset[key];
+            updateSliderDisplay(key);
+          }
+        });
+        // Auto-select a voice by gender hint
+        const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+        if (btn.dataset.preset === 'Tiny Puppy') {
+          const fem = voices.find(v => v.lang.startsWith('en') && /samantha|karen|victoria|zira|tessa|moira|fiona|veena|alice|female/i.test(v.name));
+          if (fem) { vlVoiceSelect.value = fem.name; }
+        } else if (btn.dataset.preset === 'Big Dog') {
+          const male = voices.find(v => v.lang.startsWith('en') && /daniel|alex|tom|fred|lee|oliver|rishi|male/i.test(v.name));
+          if (male) { vlVoiceSelect.value = male.name; }
+        }
+      });
+    });
+
+    // Preview
+    vlPreviewBtn.addEventListener('click', () => {
+      if (!window.speechSynthesis) return;
+      const text = vlPreviewText.value.trim() || "I'M BUDDY!! PET ME!!";
+      const clean = stripEmoji(text);
+      if (!clean) return;
+      const profile = readSlidersToProfile();
+      const voices = window.speechSynthesis.getVoices();
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(clean);
+      utter.pitch = applyPitchShift(profile.pitch, profile.pitchShiftCents || 0);
+      utter.rate  = Math.max(0.1, Math.min(10, profile.rate));
+      if (profile.voiceName) {
+        const found = voices.find(v => v.name === profile.voiceName);
+        if (found) utter.voice = found;
+      }
+      window.speechSynthesis.speak(utter);
+    });
+
+    // Save buttons
+    document.querySelectorAll('.vl-save-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cls = btn.dataset.save;
+        const profile = readSlidersToProfile();
+        localStorage.setItem(cls + 'VoiceProfile', JSON.stringify(profile));
+        const origText = btn.textContent;
+        btn.textContent = '✓ Saved!';
+        setTimeout(() => { btn.textContent = origText; }, 1600);
+      });
+    });
+
+    // Reset
+    vlResetBtn.addEventListener('click', () => {
+      ['dog','cat','person'].forEach(cls => localStorage.removeItem(cls + 'VoiceProfile'));
+      loadProfileIntoSliders(DEFAULT_VL_PROFILES.dog);
+      vlVoiceSelect.value = '';
+      const origText = vlResetBtn.textContent;
+      vlResetBtn.textContent = '✓ Reset to defaults';
+      setTimeout(() => { vlResetBtn.textContent = origText; }, 1600);
+    });
+
+    vlCloseBtn.addEventListener('click', closeVoiceLab);
+
+    // Close voice lab on backdrop tap
+    voiceLabEl.addEventListener('click', (e) => {
+      if (e.target === voiceLabEl) closeVoiceLab();
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
     function init() {
       if (!localStorage.getItem('dogName')) {
         openNameModal(false);
@@ -903,7 +1271,7 @@
 
     // ── Tap to start ──────────────────────────────────────────────────────────
     tapOverlay.addEventListener('click', () => {
-      if (nameModal.classList.contains('open')) return; // name modal takes priority
+      if (nameModal.classList.contains('open')) return;
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
