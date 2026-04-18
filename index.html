@@ -190,40 +190,44 @@
     const COOLDOWN_MS = 3000;
     let lastPlayedFile = null;
     let lastPlayedTime = 0;
-    let currentAudio = null;
+    let currentSource = null;
     let model = null;
     let detecting = false;
+    let detectBusy = false;
     let started = false;
 
-    // Preload unique audio files only
-    const audioCache = {};
+    // Web Audio API — created on tap so iOS trusts it from the start
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    const bufferCache = {};
     const uniqueFiles = [...new Set(Object.values(SOUND_MAP))];
-    for (const file of uniqueFiles) {
-      const audio = new Audio('sounds/' + file);
-      audio.preload = 'auto';
-      audioCache[file] = audio;
+
+    function loadSounds() {
+      for (const file of uniqueFiles) {
+        fetch('sounds/' + file)
+          .then(r => r.arrayBuffer())
+          .then(buf => audioCtx.decodeAudioData(buf))
+          .then(decoded => { bufferCache[file] = decoded; })
+          .catch(() => {});
+      }
     }
 
     function playSound(cls) {
       const file = SOUND_MAP[cls];
-      if (!file) return;
+      if (!file || !audioCtx || !bufferCache[file]) return;
 
       const now = Date.now();
-      const sameFile = file === lastPlayedFile;
-      const inCooldown = (now - lastPlayedTime) < COOLDOWN_MS;
-      if (sameFile && inCooldown) return;
+      if (file === lastPlayedFile && (now - lastPlayedTime) < COOLDOWN_MS) return;
 
-      const audio = audioCache[file];
-      if (!audio) return;
-
-      if (currentAudio && !currentAudio.paused) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
+      if (currentSource) {
+        try { currentSource.stop(); } catch(e) {}
       }
 
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-      currentAudio = audio;
+      const source = audioCtx.createBufferSource();
+      source.buffer = bufferCache[file];
+      source.connect(audioCtx.destination);
+      source.start(0);
+      currentSource = source;
       lastPlayedFile = file;
       lastPlayedTime = now;
     }
@@ -265,20 +269,24 @@
     async function detectLoop() {
       if (!detecting || !model) return;
 
-      try {
-        const predictions = await model.detect(video);
-        if (predictions.length > 0) {
-          const top = predictions[0];
-          const confidence = Math.round(top.score * 100);
-          detectionEl.textContent = top.class + ' (' + confidence + '%)';
-          if (SOUND_MAP[top.class]) {
-            playSound(top.class);
+      if (!detectBusy) {
+        detectBusy = true;
+        try {
+          const predictions = await model.detect(video);
+          if (predictions.length > 0) {
+            const top = predictions[0];
+            const confidence = Math.round(top.score * 100);
+            detectionEl.textContent = top.class + ' (' + confidence + '%)';
+            if (SOUND_MAP[top.class]) {
+              playSound(top.class);
+            }
+          } else {
+            detectionEl.textContent = '';
           }
-        } else {
-          detectionEl.textContent = '';
+        } catch (err) {
+          // video not ready yet, skip frame
         }
-      } catch (err) {
-        // video not ready yet, skip frame
+        detectBusy = false;
       }
 
       requestAnimationFrame(detectLoop);
@@ -289,16 +297,9 @@
       started = true;
       tapOverlay.style.display = 'none';
 
-      // iOS Safari requires audio to be triggered inside a user gesture.
-      // Mute, play, then immediately pause to unlock each element silently.
-      for (const audio of Object.values(audioCache)) {
-        audio.muted = true;
-        audio.play().then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-        }).catch(() => {});
-      }
+      // Create AudioContext inside user gesture — iOS trusts it immediately.
+      audioCtx = new AudioContext();
+      loadSounds();
 
       startCamera();
     });
