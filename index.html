@@ -332,6 +332,25 @@
 
       // Sports
       'surfboard':     'surfboard.mp3',
+
+      // Furniture
+      'chair':         'chair.mp3',
+      'couch':         'couch.mp3',
+      'bed':           'bed.mp3',
+      'dining table':  'eating.mp3',
+
+      // Appliances
+      'refrigerator':  'refrigerator.mp3',
+      'toaster':       'toaster.mp3',
+      'oven':          'microwave.mp3',
+
+      // Misc
+      'teddy bear':    'teddy-bear.mp3',
+      'vase':          'glass-clink.mp3',
+      'bowl':          'glass-clink.mp3',
+      'fork':          'eating.mp3',
+      'knife':         'eating.mp3',
+      'spoon':         'eating.mp3',
     };
 
     const COOLDOWN_MS = 1000;
@@ -407,7 +426,7 @@
 
     async function loadModel() {
       try {
-        model = await cocoSsd.load();
+        model = await cocoSsd.load({ base: 'mobilenet_v2' });
         statusEl.textContent = 'Camera active';
         detecting = true;
         detectLoop();
