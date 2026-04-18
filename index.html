@@ -275,7 +275,7 @@
     // COCO-SSD class → sound filename (only classes with sounds >1s)
     const SOUND_MAP = {
       // Animals
-      'person':        ['person.mp3', 'person-baby-cry.mp3', 'person-laugh.mp3', 'person-cough.mp3', 'person-applause.mp3', 'person-heartbeat.mp3', 'person-phone.mp3', 'crowd-cheer.mp3'],
+      'person':        ['crowd-cheer.mp3', 'person-applause.mp3', 'person-laugh.mp3', 'person-cough.mp3'],
       'bird':          'bird.mp3',
       'cat':           ['cat.mp3', 'cat-meow2.mp3', 'cat-meow3.mp3', 'cat-meow4.mp3', 'cat-meow5.mp3', 'cat-hiss.mp3', 'cat-purr.mp3', 'cat-growl.mp3', 'cat-street.mp3'],
       'dog':           ['dog.mp3', 'dog-bark2.mp3', 'dog-bark3.mp3', 'dog-puppy.mp3', 'dog-aggressive.mp3', 'dog-lively.mp3', 'dog-guard.mp3'],
@@ -354,6 +354,10 @@
     };
 
     const COOLDOWN_MS = 1000;
+    const LOCK_FRAMES = 5;   // consecutive frames before switching focus
+    let lockedClass = null;
+    let candidateClass = null;
+    let candidateCount = 0;
     let lastPlayedFile = null;
     let lastPlayedTime = 0;
     let currentSource = null;
@@ -454,13 +458,32 @@
           const predictions = await model.detect(video);
           if (predictions.length > 0) {
             const top = predictions[0];
+            const detected = top.class;
+
+            // Lock-on: require LOCK_FRAMES consecutive detections before switching
+            if (detected === lockedClass) {
+              candidateClass = null;
+              candidateCount = 0;
+            } else if (detected === candidateClass) {
+              candidateCount++;
+              if (candidateCount >= LOCK_FRAMES) {
+                lockedClass = candidateClass;
+                candidateClass = null;
+                candidateCount = 0;
+              }
+            } else {
+              candidateClass = detected;
+              candidateCount = 1;
+            }
+
+            const displayClass = lockedClass || detected;
             const confidence = Math.round(top.score * 100);
-            const label = LABEL_MAP[top.class] || top.class;
+            const label = LABEL_MAP[displayClass] || displayClass;
             detectionEl.textContent = label + '  ' + confidence + '%';
             drawGlow(top.bbox);
 
-            if (SOUND_MAP[top.class]) {
-              playSound(top.class);
+            if (SOUND_MAP[displayClass]) {
+              playSound(displayClass);
             }
           } else {
             detectionEl.textContent = '';
