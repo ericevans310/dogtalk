@@ -10,8 +10,7 @@
 
     #video {
       position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
+      width: 100%; height: 100%; object-fit: cover;
     }
     #status {
       position: fixed; top: 12px; left: 12px;
@@ -21,71 +20,161 @@
     }
     #overlay {
       position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none; z-index: 5;
+      width: 100%; height: 100%; pointer-events: none; z-index: 5;
     }
-    /* Hidden canvas for MobileNet crop classification */
     #crop-canvas { display: none; }
 
     /* ── Speech bubble ─────────────────────────────────────── */
     #speech-bubble {
-      position: fixed;
-      background: #fff; color: #111;
-      border-radius: 20px;
-      padding: 10px 16px;
-      max-width: 240px; min-width: 80px;
-      text-align: center;
-      pointer-events: none; z-index: 20;
-      display: none;
+      position: fixed; background: #fff; color: #111;
+      border-radius: 20px; padding: 10px 16px;
+      max-width: 240px; min-width: 80px; text-align: center;
+      pointer-events: none; z-index: 20; display: none;
       box-shadow: 0 4px 24px rgba(0,0,0,0.55);
     }
     #bubble-label {
-      font-size: 11px; font-weight: 700;
-      letter-spacing: 0.6px; text-transform: uppercase;
-      opacity: 0.45; margin-bottom: 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; opacity: 0.45; margin-bottom: 4px;
       font-family: -apple-system, sans-serif;
     }
     #bubble-quote {
       font-size: 15px; font-weight: 800; line-height: 1.35;
       font-family: -apple-system, sans-serif;
     }
-    #speech-bubble.above {
-      transform: translateX(-50%) translateY(-100%);
-      margin-top: -10px;
-    }
+    #speech-bubble.above { transform: translateX(-50%) translateY(-100%); margin-top: -10px; }
     #speech-bubble.above::after {
-      content: ''; position: absolute;
-      bottom: -12px; left: 50%;
+      content: ''; position: absolute; bottom: -12px; left: 50%;
       transform: translateX(-50%);
-      border: 7px solid transparent;
-      border-top-color: #fff; border-bottom: none;
+      border: 7px solid transparent; border-top-color: #fff; border-bottom: none;
     }
-    #speech-bubble.below {
-      transform: translateX(-50%);
-      margin-top: 10px;
-    }
+    #speech-bubble.below { transform: translateX(-50%); margin-top: 10px; }
     #speech-bubble.below::after {
-      content: ''; position: absolute;
-      top: -12px; left: 50%;
+      content: ''; position: absolute; top: -12px; left: 50%;
       transform: translateX(-50%);
-      border: 7px solid transparent;
-      border-bottom-color: #fff; border-top: none;
+      border: 7px solid transparent; border-bottom-color: #fff; border-top: none;
+    }
+
+    /* ── Top-right controls ─────────────────────────────────── */
+    #top-controls {
+      position: fixed; top: 8px; right: 10px;
+      display: flex; align-items: center; gap: 6px;
+      z-index: 30; opacity: 0.2;
+      transition: opacity 0.3s;
+    }
+    #top-controls.lit { opacity: 1; }
+    #top-controls button {
+      background: rgba(0,0,0,0.55); border: none; border-radius: 16px;
+      color: #fff; padding: 5px 9px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: -apple-system, sans-serif;
+      white-space: nowrap;
+    }
+
+    /* ── Discovery flash ────────────────────────────────────── */
+    #discovery-flash {
+      position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+      background: #FFD700; color: #000;
+      padding: 8px 22px; border-radius: 22px;
+      font-family: -apple-system, sans-serif;
+      font-size: 17px; font-weight: 900;
+      z-index: 40; pointer-events: none;
+      display: none; white-space: nowrap;
+    }
+    @keyframes disc-pop {
+      0%   { opacity: 0; transform: translateX(-50%) scale(0.7); }
+      15%  { opacity: 1; transform: translateX(-50%) scale(1.08); }
+      25%  { transform: translateX(-50%) scale(1); }
+      70%  { opacity: 1; transform: translateX(-50%) scale(1); }
+      100% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+    }
+    #discovery-flash.pop { display: block; animation: disc-pop 2s ease forwards; }
+
+    /* ── Shared modal backdrop ──────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+      display: none; align-items: center; justify-content: center;
+      z-index: 80; font-family: -apple-system, sans-serif;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: #1a1a1a; border-radius: 24px;
+      padding: 28px 24px; max-width: 320px; width: 90%;
+      color: #fff; text-align: center;
+    }
+    .modal-box h2 { font-size: 22px; font-weight: 800; margin-bottom: 18px; }
+    .modal-box input[type="text"] {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      border: none; font-size: 18px; font-weight: 700;
+      text-align: center; background: #2d2d2d; color: #fff;
+      margin-bottom: 16px; outline: none;
+    }
+    .modal-box input[type="text"]::placeholder { color: #666; }
+
+    /* gender radios */
+    .gender-row { display: flex; justify-content: center; gap: 16px; margin-bottom: 20px; }
+    .gender-btn {
+      flex: 1; padding: 10px; border-radius: 12px; border: 2px solid #444;
+      background: transparent; color: #aaa; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .gender-btn.selected { border-color: #FFD700; color: #FFD700; background: rgba(255,215,0,0.1); }
+
+    .modal-primary-btn {
+      width: 100%; padding: 14px; border-radius: 14px; border: none;
+      background: #FFD700; color: #000; font-size: 18px; font-weight: 800;
+      cursor: pointer; margin-top: 4px;
+    }
+    .modal-close-btn {
+      background: none; border: none; color: #666;
+      font-size: 14px; cursor: pointer; margin-top: 14px; display: block; width: 100%;
+    }
+
+    /* ── Collection modal ───────────────────────────────────── */
+    #collection-modal .modal-box {
+      max-width: 380px; padding: 20px 16px;
+      max-height: 88vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+    #collection-modal h2 { font-size: 18px; margin-bottom: 12px; }
+    #coll-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 8px; overflow-y: auto; flex: 1;
+      padding-bottom: 8px;
+    }
+    .coll-tile {
+      aspect-ratio: 1; border-radius: 12px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 22px; cursor: default;
+      background: #2a2a2a;
+    }
+    .coll-tile .tile-name {
+      font-size: 8px; font-weight: 600; color: #888;
+      text-align: center; padding: 0 2px; margin-top: 2px;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .coll-tile.found { background: #2a2a1a; cursor: pointer; }
+    .coll-tile.found:active { background: #3a3a20; }
+    .coll-tile.undiscovered .tile-emoji { color: #444; font-size: 18px; }
+    #coll-info {
+      margin-top: 10px; padding: 10px 12px; background: #2d2d2d; border-radius: 12px;
+      font-size: 13px; color: #ddd; min-height: 40px; line-height: 1.4;
+      text-align: left; display: none;
+    }
+    #coll-info.visible { display: block; }
+    #coll-close {
+      margin-top: 12px; padding: 10px; width: 100%; border-radius: 12px;
+      border: none; background: #333; color: #fff; font-size: 15px;
+      font-weight: 700; cursor: pointer;
     }
 
     #error {
-      position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
       color: #fff; font-family: -apple-system, sans-serif;
-      font-size: 16px; text-align: center;
-      padding: 20px; z-index: 10; display: none;
+      font-size: 16px; text-align: center; padding: 20px; z-index: 10; display: none;
     }
     #tap-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.85);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 100; color: #fff;
-      font-family: -apple-system, sans-serif;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 100; color: #fff; font-family: -apple-system, sans-serif;
       cursor: pointer; user-select: none;
     }
     #tap-overlay .emoji  { font-size: 72px; margin-bottom: 20px; }
@@ -98,43 +187,86 @@
   <canvas id="overlay"></canvas>
   <canvas id="crop-canvas" width="224" height="224"></canvas>
   <div id="status"></div>
-  <div id="speech-bubble">
-    <div id="bubble-label"></div>
-    <div id="bubble-quote"></div>
-  </div>
+  <div id="speech-bubble"><div id="bubble-label"></div><div id="bubble-quote"></div></div>
+  <div id="discovery-flash">🏆 NEW DISCOVERY!</div>
   <div id="error"></div>
+
+  <!-- Top-right controls: TTS toggle, trophy, settings -->
+  <div id="top-controls">
+    <button id="tts-btn">🔊</button>
+    <button id="trophy-btn">🏆 0/80</button>
+    <button id="settings-btn">⚙</button>
+  </div>
+
+  <!-- Naming modal -->
+  <div id="name-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <h2>What's your dog's name? 🐾</h2>
+      <input type="text" id="dog-name-input" maxlength="20" placeholder="Buddy" autocomplete="off" />
+      <div class="gender-row">
+        <button class="gender-btn selected" id="btn-boy" data-g="boy">🐶 Boy</button>
+        <button class="gender-btn" id="btn-girl" data-g="girl">🎀 Girl</button>
+      </div>
+      <button class="modal-primary-btn" id="name-submit">Let's go! 🐾</button>
+      <button class="modal-close-btn" id="name-cancel" style="display:none">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Collection modal -->
+  <div id="collection-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <h2 id="coll-title">🏆 Discoveries: 0 / 80</h2>
+      <div id="coll-grid"></div>
+      <div id="coll-info"></div>
+      <button id="coll-close">Close</button>
+    </div>
+  </div>
 
   <div id="tap-overlay">
     <div class="emoji">🐶</div>
-    <div class="title">Make Your Dog Talk</div>
+    <div class="title" id="tap-title">Make Your Dog Talk</div>
     <div class="sub">Tap anywhere to start</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd/dist/coco-ssd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-
   <script>
-    const video      = document.getElementById('video');
-    const overlay    = document.getElementById('overlay');
-    const cropCanvas = document.getElementById('crop-canvas');
-    const cropCtx    = cropCanvas.getContext('2d');
-    const ctx        = overlay.getContext('2d');
-    const statusEl   = document.getElementById('status');
-    const bubbleEl   = document.getElementById('speech-bubble');
-    const labelEl    = document.getElementById('bubble-label');
-    const quoteEl    = document.getElementById('bubble-quote');
-    const errorEl    = document.getElementById('error');
-    const tapOverlay = document.getElementById('tap-overlay');
+    // ── Element refs ──────────────────────────────────────────────────────────
+    const video         = document.getElementById('video');
+    const overlay       = document.getElementById('overlay');
+    const cropCanvas    = document.getElementById('crop-canvas');
+    const cropCtx       = cropCanvas.getContext('2d');
+    const ctx           = overlay.getContext('2d');
+    const statusEl      = document.getElementById('status');
+    const bubbleEl      = document.getElementById('speech-bubble');
+    const labelEl       = document.getElementById('bubble-label');
+    const quoteEl       = document.getElementById('bubble-quote');
+    const errorEl       = document.getElementById('error');
+    const tapOverlay    = document.getElementById('tap-overlay');
+    const tapTitle      = document.getElementById('tap-title');
+    const discFlash     = document.getElementById('discovery-flash');
+    const topControls   = document.getElementById('top-controls');
+    const ttsBtnEl      = document.getElementById('tts-btn');
+    const trophyBtnEl   = document.getElementById('trophy-btn');
+    const settingsBtnEl = document.getElementById('settings-btn');
+    const nameModal     = document.getElementById('name-modal');
+    const dogNameInput  = document.getElementById('dog-name-input');
+    const nameCancelBtn = document.getElementById('name-cancel');
+    const nameSubmitBtn = document.getElementById('name-submit');
+    const btnBoy        = document.getElementById('btn-boy');
+    const btnGirl       = document.getElementById('btn-girl');
+    const collModal     = document.getElementById('collection-modal');
+    const collGrid      = document.getElementById('coll-grid');
+    const collTitle     = document.getElementById('coll-title');
+    const collInfo      = document.getElementById('coll-info');
+    const collCloseBtn  = document.getElementById('coll-close');
 
-    function resizeCanvas() {
-      overlay.width  = window.innerWidth;
-      overlay.height = window.innerHeight;
-    }
+    function resizeCanvas() { overlay.width = window.innerWidth; overlay.height = window.innerHeight; }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // ── Glow overlay ─────────────────────────────────────────────────────────
+    // ── Canvas glow ───────────────────────────────────────────────────────────
     function drawGlow(bbox) {
       ctx.clearRect(0, 0, overlay.width, overlay.height);
       if (!bbox) return;
@@ -143,95 +275,56 @@
       const cw = overlay.width,    ch = overlay.height;
       const scale = Math.max(cw / vw, ch / vh);
       const ox = (cw - vw * scale) / 2, oy = (ch - vh * scale) / 2;
-      const x = bx * scale + ox, y = by * scale + oy;
-      const w = bw * scale,      h = bh * scale;
-
+      const x = bx*scale+ox, y = by*scale+oy, w = bw*scale, h = bh*scale;
       ctx.shadowColor = 'rgba(255,220,50,1)'; ctx.shadowBlur = 30;
-      ctx.strokeStyle = 'rgba(255,220,50,0.9)'; ctx.lineWidth = 3;
-      ctx.strokeRect(x, y, w, h);
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, w, h);
-      const corner = Math.min(w, h) * 0.15;
+      ctx.strokeStyle = 'rgba(255,220,50,0.9)'; ctx.lineWidth = 3; ctx.strokeRect(x,y,w,h);
+      ctx.shadowBlur = 10; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2; ctx.strokeRect(x,y,w,h);
+      const c = Math.min(w,h)*0.15;
       ctx.shadowBlur = 15; ctx.strokeStyle = 'rgba(255,220,50,1)'; ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(x, y+corner); ctx.lineTo(x, y); ctx.lineTo(x+corner, y);
-      ctx.moveTo(x+w-corner, y); ctx.lineTo(x+w, y); ctx.lineTo(x+w, y+corner);
-      ctx.moveTo(x+w, y+h-corner); ctx.lineTo(x+w, y+h); ctx.lineTo(x+w-corner, y+h);
-      ctx.moveTo(x+corner, y+h); ctx.lineTo(x, y+h); ctx.lineTo(x, y+h-corner);
+      ctx.moveTo(x,y+c); ctx.lineTo(x,y); ctx.lineTo(x+c,y);
+      ctx.moveTo(x+w-c,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+c);
+      ctx.moveTo(x+w,y+h-c); ctx.lineTo(x+w,y+h); ctx.lineTo(x+w-c,y+h);
+      ctx.moveTo(x+c,y+h); ctx.lineTo(x,y+h); ctx.lineTo(x,y+h-c);
       ctx.stroke();
     }
 
     // ── Speech bubble ─────────────────────────────────────────────────────────
     function showBubble(label, quote, bbox) {
       if (!quote || !bbox) { bubbleEl.style.display = 'none'; return; }
+      const resolved = resolveQuote(quote);
       const [bx, by, bw, bh] = bbox;
       const vw = video.videoWidth, vh = video.videoHeight;
       const cw = overlay.width,    ch = overlay.height;
       const scale = Math.max(cw / vw, ch / vh);
-      const ox = (cw - vw * scale) / 2, oy = (ch - vh * scale) / 2;
-      const screenX  = bx * scale + ox + (bw * scale) / 2;
-      const bboxTop  = by * scale + oy;
-      const bboxBot  = (by + bh) * scale + oy;
-      const clampedX = Math.max(130, Math.min(cw - 130, screenX));
-
-      labelEl.textContent = label || '';
-      labelEl.style.display = label ? 'block' : 'none';
-      quoteEl.textContent = quote;
-      bubbleEl.style.left  = clampedX + 'px';
-
+      const ox = (cw-vw*scale)/2, oy = (ch-vh*scale)/2;
+      const screenX = bx*scale+ox+(bw*scale)/2;
+      const bboxTop = by*scale+oy, bboxBot = (by+bh)*scale+oy;
+      const clampedX = Math.max(130, Math.min(cw-130, screenX));
+      labelEl.textContent = label || ''; labelEl.style.display = label ? 'block' : 'none';
+      quoteEl.textContent = resolved;
+      bubbleEl.style.left = clampedX + 'px';
       if (bboxTop > 120) {
-        bubbleEl.className = 'above';
-        bubbleEl.style.top = bboxTop + 'px';
+        bubbleEl.className = 'above'; bubbleEl.style.top = bboxTop + 'px';
       } else {
-        bubbleEl.className = 'below';
-        bubbleEl.style.top = bboxBot + 'px';
+        bubbleEl.className = 'below'; bubbleEl.style.top = bboxBot + 'px';
       }
       bubbleEl.style.display = 'block';
     }
 
     // ── MobileNet label → sound category mapping ──────────────────────────────
-    // Uses substring matching on the lowercased className for maintainability.
     function mobilenetCategory(className) {
       const s = className.toLowerCase();
-
-      // ── Dogs (120 ImageNet breeds all map to 'dog') ────────────────────────
-      const dogTerms = [
-        'retriever','labrador','spaniel','terrier','shepherd','sheepdog',
-        'poodle','bulldog','schnauzer','setter','pointer','mastiff','boxer',
-        'rottweiler','doberman','husky','malamute','samoyed','pomeranian',
-        'chihuahua','beagle','basset','bloodhound','dachshund','dalmatian',
-        'pug','basenji','borzoi','greyhound','whippet','saluki','vizsla',
-        'collie','kelpie','briard','malinois','groenendael','komondor',
-        'kuvasz','weimaraner','rhodesian','afghan','wolfhound','deerhound',
-        'elkhound','otterhound','redbone','bluetick','great dane',
-        'great pyrenees','saint bernard','newfoundland','leonberg',
-        'appenzeller','entlebucher','bouvier','schipperke','keeshond',
-        'chow','dingo','dhole','african hunting dog',
-      ];
+      const dogTerms = ['retriever','labrador','spaniel','terrier','shepherd','sheepdog','poodle','bulldog','schnauzer','setter','pointer','mastiff','boxer','rottweiler','doberman','husky','malamute','samoyed','pomeranian','chihuahua','beagle','basset','bloodhound','dachshund','dalmatian','pug','basenji','borzoi','greyhound','whippet','saluki','vizsla','collie','kelpie','briard','malinois','groenendael','komondor','kuvasz','weimaraner','rhodesian','afghan','wolfhound','deerhound','elkhound','otterhound','redbone','bluetick','great dane','great pyrenees','saint bernard','newfoundland','leonberg','appenzeller','entlebucher','bouvier','schipperke','keeshond','chow','dingo','dhole','african hunting dog'];
       if (dogTerms.some(t => s.includes(t))) return 'dog';
-
-      // ── Cats ───────────────────────────────────────────────────────────────
       if (/tabby|persian cat|siamese cat|egyptian cat|tiger cat/.test(s)) return 'cat';
-
-      // ── Birds ──────────────────────────────────────────────────────────────
-      const birdTerms = [
-        'robin','finch','bunting','eagle','hawk','owl','vulture','pelican',
-        'flamingo','crane','heron','egret','albatross','penguin','parrot',
-        'macaw','cockatoo','hen','rooster','turkey','duck','goose','swan',
-        'jay','magpie','crow','raven','sparrow','warbler','chickadee',
-        'bulbul','kite','condor','osprey','ostrich','goldfinch','junco',
-      ];
+      const birdTerms = ['robin','finch','bunting','eagle','hawk','owl','vulture','pelican','flamingo','crane','heron','egret','albatross','penguin','parrot','macaw','cockatoo','hen','rooster','turkey','duck','goose','swan','jay','magpie','crow','raven','sparrow','warbler','chickadee','bulbul','kite','condor','osprey','ostrich','goldfinch','junco'];
       if (birdTerms.some(t => s.includes(t))) return 'bird';
-
-      // ── Vehicles ───────────────────────────────────────────────────────────
       if (/sports car|racing car|convertible|limousine|beach wagon|station wagon|minivan|jeep/.test(s)) return 'car';
       if (/pickup|garbage truck|fire engine|ambulance/.test(s)) return 'truck';
       if (/motorcycle|moped|motor scooter/.test(s)) return 'motorcycle';
       if (/bicycle|mountain bike/.test(s)) return 'bicycle';
       if (/airliner|warplane|airship/.test(s)) return 'airplane';
-
-      // ── Food ───────────────────────────────────────────────────────────────
       if (/pizza/.test(s)) return 'pizza';
       if (/hot dog|hotdog|cheeseburger|hamburger/.test(s)) return 'hot dog';
       if (/banana/.test(s)) return 'banana';
@@ -242,17 +335,13 @@
       if (/carrot/.test(s)) return 'carrot';
       if (/donut|doughnut/.test(s)) return 'donut';
       if (/chocolate cake|birthday cake|ice cream/.test(s)) return 'cake';
-
-      // ── Animals ────────────────────────────────────────────────────────────
       if (/elephant/.test(s)) return 'elephant';
       if (/bear|panda/.test(s)) return 'bear';
-      if (/horse|stallion|mare|colt|foal/.test(s)) return 'horse';
+      if (/horse|stallion|mare/.test(s)) return 'horse';
       if (/cow|ox|bison|buffalo|bull/.test(s)) return 'cow';
       if (/sheep|ram|ewe|lamb/.test(s)) return 'sheep';
       if (/zebra/.test(s)) return 'zebra';
       if (/giraffe/.test(s)) return 'giraffe';
-
-      // ── Electronics ────────────────────────────────────────────────────────
       if (/laptop|notebook computer/.test(s)) return 'laptop';
       if (/television|monitor|screen|crt/.test(s)) return 'tv';
       if (/cell phone|mobile phone|smartphone/.test(s)) return 'cell phone';
@@ -260,39 +349,25 @@
       if (/microwave/.test(s)) return 'microwave';
       if (/toaster/.test(s)) return 'toaster';
       if (/refrigerator/.test(s)) return 'refrigerator';
-      if (/clock|stopwatch|hourglass/.test(s)) return 'clock';
-
-      // ── Misc ───────────────────────────────────────────────────────────────
+      if (/clock|stopwatch/.test(s)) return 'clock';
       if (/teddy/.test(s)) return 'teddy bear';
       if (/toilet/.test(s)) return 'toilet';
-      if (/book|comic book/.test(s)) return 'book';
-      if (/wine bottle|beer bottle|water bottle/.test(s)) return 'bottle';
-      if (/wine glass|beer glass/.test(s)) return 'wine glass';
-      if (/vase/.test(s)) return 'vase';
-      if (/backpack|bag/.test(s)) return 'backpack';
-      if (/umbrella/.test(s)) return 'umbrella';
       if (/couch|sofa/.test(s)) return 'couch';
-
-      return null; // no match — keep COCO-SSD class
+      return null;
     }
-
-    // Pretty-print the MobileNet class for the bubble label
     function prettyLabel(className) {
-      return className
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase())
-        .replace(/,.*/, ''); // strip ImageNet alternate names after comma
+      return className.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()).replace(/,.*/,'');
     }
 
-    // ── LABEL_MAP (emoji labels, mostly for status) ───────────────────────────
+    // ── LABEL_MAP ─────────────────────────────────────────────────────────────
     const LABEL_MAP = {
       'person':'👤','bicycle':'🚲','car':'🚗','motorcycle':'🏍️','airplane':'✈️',
       'bus':'🚌','train':'🚂','truck':'🚚','boat':'⛵','traffic light':'🚦',
-      'fire hydrant':'🔴','stop sign':'🛑','bench':'🪑','bird':'🐦','cat':'🐈',
-      'dog':'🐕','horse':'🐎','sheep':'🐑','cow':'🐄','elephant':'🐘',
-      'bear':'🐻','zebra':'🦓','giraffe':'🦒','backpack':'🎒','umbrella':'☂️',
-      'handbag':'👜','tie':'👔','suitcase':'🧳','frisbee':'🥏','skis':'⛷️',
-      'snowboard':'🏂','sports ball':'⚽','kite':'🪁','baseball bat':'⚾',
+      'fire hydrant':'🔴','stop sign':'🛑','parking meter':'🅿️','bench':'🪑',
+      'bird':'🐦','cat':'🐈','dog':'🐕','horse':'🐎','sheep':'🐑','cow':'🐄',
+      'elephant':'🐘','bear':'🐻','zebra':'🦓','giraffe':'🦒','backpack':'🎒',
+      'umbrella':'☂️','handbag':'👜','tie':'👔','suitcase':'🧳','frisbee':'🥏',
+      'skis':'⛷️','snowboard':'🏂','sports ball':'⚽','kite':'🪁','baseball bat':'⚾',
       'baseball glove':'🧤','skateboard':'🛹','surfboard':'🏄','tennis racket':'🎾',
       'bottle':'🍶','wine glass':'🍷','cup':'☕','fork':'🍴','knife':'🔪',
       'spoon':'🥄','bowl':'🥣','banana':'🍌','apple':'🍎','sandwich':'🥪',
@@ -305,10 +380,25 @@
       'scissors':'✂️','teddy bear':'🧸','hair drier':'💨','toothbrush':'🪥',
     };
 
-    // ── Funny dog-POV quotes ──────────────────────────────────────────────────
+    // All 80 COCO-SSD classes in order (for collection grid)
+    const ALL_CLASSES = [
+      'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat',
+      'traffic light','fire hydrant','stop sign','parking meter','bench',
+      'bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe',
+      'backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard',
+      'sports ball','kite','baseball bat','baseball glove','skateboard','surfboard',
+      'tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl',
+      'banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza',
+      'donut','cake','chair','couch','potted plant','bed','dining table','toilet','tv',
+      'laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster',
+      'sink','refrigerator','book','clock','vase','scissors','teddy bear',
+      'hair drier','toothbrush',
+    ];
+
+    // ── Dog-POV quotes (dog's name via {NAME}) ────────────────────────────────
     const QUOTES_MAP = {
-      'person':       ["PET ME RIGHT NOW 🐾","YOU'RE HOME!! YOU'RE HOME!!","Walk time? WALK TIME??","Belly rubs. Not optional.","I missed you. All 5 minutes.","Did someone say TREAT??","I love you so much it hurts.","Please. I'm starving. (5 min ago)"],
-      'dog':          ["NEW FRIEND!! I LOVE YOU!!","WHO ARE YOU I LOVE YOU","Wanna sniff butts? I'll go first.","YOU'RE ALSO A DOG!! WOW!!","Play?? LET'S PLAY!!","Another good boy detected 🐾","I would die for you and I just met you."],
+      'person':       ["PET ME RIGHT NOW 🐾","YOU'RE HOME!! YOU'RE HOME!!","Walk time? WALK TIME??","Belly rubs. Not optional.","I missed you. All 5 minutes.","Did someone say TREAT??","I love you so much it hurts.","Please. I'm starving. (5 min ago)","WAIT — are you {NAME}'s human??","Do you have treats for {NAME}?","{NAME} has been SO good today!"],
+      'dog':          ["NEW FRIEND!! I LOVE YOU!!","WHO ARE YOU I LOVE YOU","Wanna sniff butts? I'll go first.","YOU'RE ALSO A DOG!! WOW!!","Play?? LET'S PLAY!!","Another good boy detected 🐾","I would die for you and I just met you.","I'M {NAME}! PET ME!!","{NAME} SAYS HI!!","It's me, {NAME}!! Your favorite dog!!","{NAME} wants treats. Urgently."],
       'cat':          ["ARCH NEMESIS DETECTED 😤","DO I CHASE IT?? I CHASE IT.","Why does it just... stare","Suspicious. Very suspicious.","I do not trust this creature.","It acts like it owns the place.","One day I will lick its face."],
       'bird':         ["THE AUDACITY. IN MY YARD.","I almost caught one once. Almost.","INTRUDER ALERT 🚨","I could catch it. I choose not to.","Come down here and say that."],
       'horse':        ["That's just a BIG dog. Right?","Very large. I respect it greatly.","It smells interesting. Intrigued.","Same energy as me but bigger."],
@@ -379,15 +469,14 @@
       'dining table': ["Food happens on this surface.","I sit next to this. Always."],
       'toothbrush':   ["They use this daily. I do not.","Mint flavored? I'd consider it."],
     };
+    const DEFAULT_QUOTES = ["What IS this thing?? 🐾","I should sniff this.","Interesting. Very interesting.","*intense sniffing sounds*","Should I bark? I'll bark.","My human would want to know about this."];
 
-    const DEFAULT_QUOTES = [
-      "What IS this thing?? 🐾",
-      "I should sniff this.",
-      "Interesting. Very interesting.",
-      "*intense sniffing sounds*",
-      "Should I bark? I'll bark.",
-      "My human would want to know about this.",
-    ];
+    // ── Name helpers ──────────────────────────────────────────────────────────
+    function getDogName() { return localStorage.getItem('dogName') || 'me'; }
+
+    function resolveQuote(quote) {
+      return quote.replace(/\{NAME\}/g, getDogName());
+    }
 
     function pickQuote(cls) {
       const pool = QUOTES_MAP[cls] || DEFAULT_QUOTES;
@@ -396,74 +485,155 @@
 
     // ── Sound map ─────────────────────────────────────────────────────────────
     const SOUND_MAP = {
-      'person':        ['crowd-cheer.mp3','person-applause.mp3','person-laugh.mp3','person-cough.mp3','children-laugh.mp3'],
-      'bird':          'bird.mp3',
-      'cat':           ['cat.mp3','cat-meow2.mp3','cat-meow4.mp3','cat-meow5.mp3','cat-hiss.mp3','cat-purr.mp3','cat-growl.mp3','cat-voice.mp3','cat-calling.mp3','cat-scream.mp3','cat-cats-growl.mp3'],
-      'dog':           ['dog.mp3','dog-bark2.mp3','dog-lively.mp3','dog-puppy.mp3','dog-guard.mp3','dog-howl.mp3','dog-singing.mp3','dog-whine-bark.mp3'],
-      'horse':         'horse.mp3',
-      'sheep':         'sheep.mp3',
-      'cow':           'cow.mp3',
-      'elephant':      'elephant.mp3',
-      'bear':          'bear.mp3',
-      'zebra':         ['dog-howl.mp3','horse.mp3'],
-      'giraffe':       'elephant.mp3',
-      'bicycle':       'bicycle.mp3',
-      'car':           'car.mp3',
-      'motorcycle':    'motorcycle.mp3',
-      'airplane':      'airplane.mp3',
-      'bus':           'bus.mp3',
-      'train':         'train.mp3',
-      'truck':         'truck.mp3',
-      'boat':          'boat.mp3',
-      'tv':            'tv.mp3',
-      'laptop':        'laptop.mp3',
-      'keyboard':      'keyboard.mp3',
-      'cell phone':    'cell-phone.mp3',
-      'microwave':     'microwave.mp3',
-      'clock':         'clock.mp3',
-      'toilet':        'toilet.mp3',
-      'sink':          'sink.mp3',
-      'hair drier':    'hair-drier.mp3',
-      'bottle':        'bottle.mp3',
-      'wine glass':    'wine-glass.mp3',
-      'cup':           'bottle.mp3',
-      'bowl':          'glass-clink.mp3',
-      'vase':          'glass-clink.mp3',
-      'apple':         'apple.mp3',
-      'orange':        'apple.mp3',
-      'broccoli':      'apple.mp3',
-      'carrot':        'apple.mp3',
-      'banana':        'eating.mp3',
-      'sandwich':      'eating.mp3',
-      'donut':         'eating.mp3',
-      'cake':          'eating.mp3',
-      'hot dog':       'eating.mp3',
-      'fork':          'eating.mp3',
-      'knife':         'eating.mp3',
-      'spoon':         'eating.mp3',
-      'dining table':  'eating.mp3',
-      'pizza':         'sizzle.mp3',
-      'surfboard':     'surfboard.mp3',
-      'sports ball':   'apple.mp3',
-      'baseball bat':  'baseball-bat.mp3',
-      'tennis racket': 'tennis-hit.mp3',
-      'frisbee':       'dog-lively.mp3',
-      'chair':         'chair.mp3',
-      'couch':         'couch.mp3',
-      'bed':           'bed.mp3',
-      'refrigerator':  'refrigerator.mp3',
-      'toaster':       'toaster.mp3',
-      'oven':          'microwave.mp3',
-      'teddy bear':    'teddy-bear.mp3',
-      'backpack':      'dog-puppy.mp3',
-      'suitcase':      'dog-puppy.mp3',
+      'person':       ['crowd-cheer.mp3','person-applause.mp3','person-laugh.mp3','person-cough.mp3','children-laugh.mp3'],
+      'bird':         'bird.mp3',
+      'cat':          ['cat.mp3','cat-meow2.mp3','cat-meow4.mp3','cat-meow5.mp3','cat-hiss.mp3','cat-purr.mp3','cat-growl.mp3','cat-voice.mp3','cat-calling.mp3','cat-scream.mp3','cat-cats-growl.mp3'],
+      'dog':          ['dog.mp3','dog-bark2.mp3','dog-lively.mp3','dog-puppy.mp3','dog-guard.mp3','dog-howl.mp3','dog-singing.mp3','dog-whine-bark.mp3'],
+      'horse':        'horse.mp3','sheep':'sheep.mp3','cow':'cow.mp3','elephant':'elephant.mp3','bear':'bear.mp3',
+      'zebra':        ['dog-howl.mp3','horse.mp3'],'giraffe':'elephant.mp3',
+      'bicycle':      'bicycle.mp3','car':'car.mp3','motorcycle':'motorcycle.mp3','airplane':'airplane.mp3',
+      'bus':          'bus.mp3','train':'train.mp3','truck':'truck.mp3','boat':'boat.mp3',
+      'tv':           'tv.mp3','laptop':'laptop.mp3','keyboard':'keyboard.mp3','cell phone':'cell-phone.mp3',
+      'microwave':    'microwave.mp3','clock':'clock.mp3','toilet':'toilet.mp3','sink':'sink.mp3',
+      'hair drier':   'hair-drier.mp3','bottle':'bottle.mp3','wine glass':'wine-glass.mp3',
+      'cup':          'bottle.mp3','bowl':'glass-clink.mp3','vase':'glass-clink.mp3',
+      'apple':        'apple.mp3','orange':'apple.mp3','broccoli':'apple.mp3','carrot':'apple.mp3',
+      'banana':       'eating.mp3','sandwich':'eating.mp3','donut':'eating.mp3','cake':'eating.mp3',
+      'hot dog':      'eating.mp3','fork':'eating.mp3','knife':'eating.mp3','spoon':'eating.mp3',
+      'dining table': 'eating.mp3','pizza':'sizzle.mp3','surfboard':'surfboard.mp3',
+      'sports ball':  'apple.mp3','baseball bat':'baseball-bat.mp3','tennis racket':'tennis-hit.mp3',
+      'frisbee':      'dog-lively.mp3','chair':'chair.mp3','couch':'couch.mp3','bed':'bed.mp3',
+      'refrigerator': 'refrigerator.mp3','toaster':'toaster.mp3','oven':'microwave.mp3',
+      'teddy bear':   'teddy-bear.mp3','backpack':'dog-puppy.mp3','suitcase':'dog-puppy.mp3',
     };
+
+    // ── TTS ───────────────────────────────────────────────────────────────────
+    const VOICE_PROFILES = {
+      'dog':      { pitch: 1.6,  rate: 1.25 },
+      'cat':      { pitch: 0.8,  rate: 0.95 },
+      'person':   { pitch: 1.0,  rate: 1.0  },
+      'bird':     { pitch: 1.8,  rate: 1.4  },
+      'cow':      { pitch: 0.5,  rate: 0.75 },
+      'horse':    { pitch: 0.7,  rate: 0.9  },
+      'sheep':    { pitch: 1.4,  rate: 1.0  },
+      'elephant': { pitch: 0.3,  rate: 0.7  },
+      'bear':     { pitch: 0.4,  rate: 0.8  },
+      'default':  { pitch: 1.0,  rate: 1.0  },
+    };
+
+    let ttsEnabled = localStorage.getItem('ttsEnabled') !== 'false';
+    let lastSpokenQuote = null;
+
+    function stripEmoji(str) {
+      return str.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FEFF}]|[\u{1F300}-\u{1FAD6}]/gu, '').replace(/\s+/g,' ').trim();
+    }
+
+    function speakQuote(quote, cls) {
+      if (!ttsEnabled || !window.speechSynthesis) return;
+      const resolved = resolveQuote(quote);
+      if (resolved === lastSpokenQuote) return;
+      lastSpokenQuote = resolved;
+      const clean = stripEmoji(resolved);
+      if (!clean) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(clean);
+      const profile = VOICE_PROFILES[cls] || VOICE_PROFILES['default'];
+      utter.pitch = profile.pitch;
+      utter.rate  = profile.rate;
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(v => v.lang.startsWith('en'));
+      if (englishVoice) utter.voice = englishVoice;
+      window.speechSynthesis.speak(utter);
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`).join(', '));
+      });
+    }
+
+    function updateTtsBtn() { ttsBtnEl.textContent = ttsEnabled ? '🔊' : '🔇'; }
+    updateTtsBtn();
+
+    // ── Discovery ─────────────────────────────────────────────────────────────
+    const discovered = new Set(JSON.parse(localStorage.getItem('discovered') || '[]'));
+
+    function updateTrophyCounter() {
+      const count = discovered.size;
+      trophyBtnEl.textContent = `🏆 ${count}/80`;
+      collTitle.textContent   = `🏆 Discoveries: ${count} / 80`;
+    }
+    updateTrophyCounter();
+
+    let discFlashTimer = null;
+    function showDiscoveryFlash() {
+      discFlash.classList.remove('pop');
+      void discFlash.offsetWidth;
+      discFlash.classList.add('pop');
+      clearTimeout(discFlashTimer);
+      discFlashTimer = setTimeout(() => discFlash.classList.remove('pop'), 2100);
+    }
+
+    function playDiscoverySound() {
+      if (!audioCtx) return;
+      if (bufferCache['discovery.mp3']) {
+        const src = audioCtx.createBufferSource();
+        src.buffer = bufferCache['discovery.mp3'];
+        src.connect(audioCtx.destination);
+        src.start(0);
+        return;
+      }
+      // Synthesized fallback: C5 (523Hz) → G5 (784Hz), 150ms each
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.36);
+    }
+
+    function checkDiscovery(cls) {
+      if (discovered.has(cls)) return;
+      discovered.add(cls);
+      localStorage.setItem('discovered', JSON.stringify([...discovered]));
+      updateTrophyCounter();
+      showDiscoveryFlash();
+      playDiscoverySound();
+    }
+
+    // ── Collection grid ───────────────────────────────────────────────────────
+    function renderCollectionGrid() {
+      collGrid.innerHTML = '';
+      collInfo.className = '';
+      ALL_CLASSES.forEach(cls => {
+        const tile = document.createElement('div');
+        const found = discovered.has(cls);
+        tile.className = 'coll-tile ' + (found ? 'found' : 'undiscovered');
+        const emoji = found ? (LABEL_MAP[cls] || '❓') : '?';
+        tile.innerHTML = `<span class="tile-emoji">${emoji}</span><span class="tile-name">${found ? cls : '???'}</span>`;
+        if (found) {
+          tile.title = cls;
+          tile.addEventListener('click', () => {
+            const q = resolveQuote(pickQuote(cls));
+            const soundFile = SOUND_MAP[cls];
+            const sf = Array.isArray(soundFile) ? soundFile[0] : soundFile;
+            collInfo.textContent = `${LABEL_MAP[cls] || '?'} ${cls} — "${q}"`;
+            collInfo.className = 'visible';
+          });
+        }
+        collGrid.appendChild(tile);
+      });
+    }
 
     // ── Audio ─────────────────────────────────────────────────────────────────
     const COOLDOWN_MS = 1000;
     let lastPlayedFile = null, lastPlayedTime = 0;
     let currentSource = null, isPlaying = false;
-
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     const bufferCache = {};
@@ -498,10 +668,20 @@
       const maxOffset = buf.duration > 4 ? Math.min(2, buf.duration - 3) : 0;
       const startOffset = maxOffset > 0 ? Math.random() * maxOffset : 0;
 
+      // Capture class/quote at call time for TTS timing
+      const capturedClass = cls;
+      const capturedQuote = activeQuote;
+
       const source = audioCtx.createBufferSource();
       source.buffer = buf;
       source.connect(audioCtx.destination);
-      source.onended = () => { isPlaying = false; currentSource = null; lastPlayedTime = Date.now(); };
+      source.onended = () => {
+        isPlaying = false; currentSource = null; lastPlayedTime = Date.now();
+        // Speak after sound finishes, only if class hasn't changed
+        if (activeClass === capturedClass && capturedQuote) {
+          speakQuote(capturedQuote, capturedClass);
+        }
+      };
       source.start(0, startOffset);
       source.stop(audioCtx.currentTime + 3);
       isPlaying = true; currentSource = source;
@@ -509,40 +689,35 @@
     }
 
     // ── Detection ─────────────────────────────────────────────────────────────
-    const PRIORITY_CLASSES = ['dog','cat','bird','horse','cow','sheep','elephant','bear','zebra','giraffe','person'];
+    const PRIORITY_CLASSES      = ['dog','cat','bird','horse','cow','sheep','elephant','bear','zebra','giraffe','person'];
+    const VOTE_WINDOW            = 7;
+    const VOTE_THRESH            = 4;
+    const PRIORITY_THRESH        = 3;
+    const MIN_CONF               = 0.38;
+    const PRIORITY_CONF          = 0.40;
+    const PRIORITY_ABSENT_CONF   = 0.25;
+    const PRIORITY_HOLD_MS       = 3000;
+    const PRIORITY_ABSENT_FRAMES = 5;
 
-    const VOTE_WINDOW       = 7;
-    const VOTE_THRESH       = 4;   // votes needed for non-priority classes
-    const PRIORITY_THRESH   = 3;   // votes needed for priority classes (faster lock-on)
-    const MIN_CONF          = 0.38;
-    const PRIORITY_CONF     = 0.40; // confidence floor to count a priority detection
-    const PRIORITY_ABSENT_CONF = 0.25; // minimum to count as "still present"
-    const PRIORITY_HOLD_MS  = 3000; // ms to hold a priority class before allowing replacement
-    const PRIORITY_ABSENT_FRAMES = 5; // frames of absence before releasing priority lock
-
-    let voteBuffer     = [];
-    let activeClass    = null;
-    let activeBbox     = null;
-    let activeQuote    = null;
-    let activeLabel    = null;  // specific MobileNet label (e.g. "Golden Retriever")
-    let activeLockedAt = 0;     // timestamp when current priority class was locked
-    let priorityAbsentCount = 0; // consecutive frames where priority subject not seen
+    let voteBuffer        = [];
+    let activeClass       = null;
+    let activeBbox        = null;
+    let activeQuote       = null;
+    let activeLabel       = null;
+    let activeLockedAt    = 0;
+    let priorityAbsentCount = 0;
 
     let cocoModel = null, mnModel = null;
     let detecting = false, detectBusy = false, started = false;
-    let mnFrameCount = 0;   // run MobileNet every 3rd frame
+    let mnFrameCount = 0;
 
-    // Crop the active bbox out of the video into the hidden canvas
     function cropToBbox(bbox) {
       if (!bbox || !video.videoWidth) return false;
       const [bx, by, bw, bh] = bbox;
       const vw = video.videoWidth, vh = video.videoHeight;
-      // Add 10% padding around the bbox for better context
       const pad = 0.10;
-      const sx = Math.max(0, bx - bw * pad);
-      const sy = Math.max(0, by - bh * pad);
-      const sw = Math.min(vw - sx, bw * (1 + 2 * pad));
-      const sh = Math.min(vh - sy, bh * (1 + 2 * pad));
+      const sx = Math.max(0, bx - bw*pad), sy = Math.max(0, by - bh*pad);
+      const sw = Math.min(vw - sx, bw*(1+2*pad)), sh = Math.min(vh - sy, bh*(1+2*pad));
       cropCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 224, 224);
       return true;
     }
@@ -555,20 +730,16 @@
       } catch (err) {
         errorEl.style.display = 'block';
         errorEl.textContent = err.name === 'NotAllowedError' ? 'Camera permission denied.' :
-                              err.name === 'NotFoundError'   ? 'No camera found.'          :
+                              err.name === 'NotFoundError'   ? 'No camera found.' :
                               'Could not start camera: ' + err.message;
       }
     }
 
     async function loadModels() {
       try {
-        // Load COCO-SSD first (detection), then MobileNet (classification)
         cocoModel = await cocoSsd.load({ base: 'mobilenet_v2' });
         statusEl.textContent = 'Camera active';
-        detecting = true;
-        detectLoop();
-
-        // MobileNet loads in the background — detection works without it
+        detecting = true; detectLoop();
         mnModel = await mobilenet.load({ version: 2, alpha: 1.0 });
       } catch { statusEl.textContent = 'Model failed to load'; }
     }
@@ -580,80 +751,60 @@
         try {
           const preds = await cocoModel.detect(video);
 
-          // ── Priority selection: prefer animals/person over objects ────────
-          // Find highest-confidence priority detection first
-          const priorityPred = preds
-            .filter(p => PRIORITY_CLASSES.includes(p.class) && p.score >= PRIORITY_CONF)
-            .sort((a, b) => b.score - a.score)[0] || null;
-          // Fall back to best non-priority only if no priority found
-          const fallbackPred = !priorityPred
-            ? (preds.filter(p => p.score >= MIN_CONF)[0] || null)
-            : null;
+          // Priority: prefer animals/person over background objects
+          const priorityPred = preds.filter(p => PRIORITY_CLASSES.includes(p.class) && p.score >= PRIORITY_CONF).sort((a,b) => b.score-a.score)[0] || null;
+          const fallbackPred = !priorityPred ? (preds.filter(p => p.score >= MIN_CONF)[0] || null) : null;
           const best = priorityPred || fallbackPred;
 
-          // ── Track whether active priority subject is still visible ────────
+          // Track absence of active priority subject
           const isPriorityActive = activeClass && PRIORITY_CLASSES.includes(activeClass);
           if (isPriorityActive) {
-            const stillSeen = preds.some(
-              p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF
-            );
+            const stillSeen = preds.some(p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF);
             priorityAbsentCount = stillSeen ? 0 : priorityAbsentCount + 1;
-          } else {
-            priorityAbsentCount = 0;
-          }
+          } else { priorityAbsentCount = 0; }
 
-          // Release priority lock only after sustained absence
           const priorityLockExpired = Date.now() - activeLockedAt >= PRIORITY_HOLD_MS;
           const prioritySubjectGone = priorityAbsentCount >= PRIORITY_ABSENT_FRAMES;
-          const canSwitch = !isPriorityActive
-            || (priorityLockExpired && prioritySubjectGone);
+          const canSwitch = !isPriorityActive || (priorityLockExpired && prioritySubjectGone);
 
-          // ── Rolling vote window ───────────────────────────────────────────
+          // Rolling vote
           voteBuffer.push(best ? { cls: best.class, bbox: best.bbox } : null);
           if (voteBuffer.length > VOTE_WINDOW) voteBuffer.shift();
-
           const counts = {};
-          for (const v of voteBuffer) if (v) counts[v.cls] = (counts[v.cls] || 0) + 1;
-          const winner = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
-          const threshold = (winner && PRIORITY_CLASSES.includes(winner))
-            ? PRIORITY_THRESH : VOTE_THRESH;
+          for (const v of voteBuffer) if (v) counts[v.cls] = (counts[v.cls]||0) + 1;
+          const winner = Object.keys(counts).sort((a,b) => counts[b]-counts[a])[0] || null;
+          const threshold = (winner && PRIORITY_CLASSES.includes(winner)) ? PRIORITY_THRESH : VOTE_THRESH;
 
           if (winner && counts[winner] >= threshold && (winner === activeClass || canSwitch)) {
             const changed = winner !== activeClass;
             activeClass = winner;
-
             if (changed) {
               activeLockedAt = Date.now();
               priorityAbsentCount = 0;
               activeQuote = pickQuote(winner);
               activeLabel = null;
+              checkDiscovery(winner);  // ← discovery check on each new class
             }
-
             const fresh = [...voteBuffer].reverse().find(v => v && v.cls === winner);
             if (fresh) activeBbox = fresh.bbox;
 
-            // ── MobileNet crop classification (every 3rd frame) ───────────
+            // MobileNet crop (every 3rd frame)
             mnFrameCount++;
             if (mnModel && activeBbox && mnFrameCount % 3 === 0) {
               if (cropToBbox(activeBbox)) {
                 try {
                   const results = await mnModel.classify(cropCanvas, 3);
                   if (results.length > 0 && results[0].probability >= 0.25) {
-                    const mnCls  = mobilenetCategory(results[0].className);
+                    const mnCls = mobilenetCategory(results[0].className);
                     const pretty = prettyLabel(results[0].className);
                     if (mnCls === activeClass || mnCls === null) {
                       activeLabel = pretty;
-                    } else if (mnCls && results[0].probability >= 0.55) {
-                      // MobileNet strongly disagrees — only override if canSwitch
-                      if (canSwitch) {
-                        activeClass = mnCls;
-                        activeLabel = pretty;
-                        activeQuote = pickQuote(mnCls);
-                        activeLockedAt = Date.now();
-                      }
+                    } else if (mnCls && results[0].probability >= 0.55 && canSwitch) {
+                      activeClass = mnCls; activeLabel = pretty;
+                      activeQuote = pickQuote(mnCls); activeLockedAt = Date.now();
                     }
                   }
-                } catch { /* crop classify failed */ }
+                } catch {}
               }
             }
 
@@ -664,33 +815,95 @@
             if (SOUND_MAP[activeClass]) playSound(activeClass);
 
           } else if (activeClass && !canSwitch) {
-            // Holding priority lock — keep showing current subject, just refresh bbox
-            const freshPriority = preds.find(
-              p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF
-            );
+            const freshPriority = preds.find(p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF);
             if (freshPriority) activeBbox = freshPriority.bbox;
             const emoji = LABEL_MAP[activeClass] || '🐾';
             const displayLabel = activeLabel ? (emoji + ' ' + activeLabel) : null;
             drawGlow(activeBbox);
             showBubble(displayLabel, activeQuote, activeBbox);
-            // Don't re-trigger sound while holding lock, isPlaying guard handles it
-
           } else {
             drawGlow(best?.bbox || null);
             if (!isPlaying) {
               activeClass = null; activeQuote = null; activeLabel = null;
-              priorityAbsentCount = 0;
-              showBubble(null, null, null);
+              priorityAbsentCount = 0; showBubble(null, null, null);
             }
           }
-        } catch { /* frame not ready */ }
+        } catch {}
         detectBusy = false;
       }
       requestAnimationFrame(detectLoop);
     }
 
+    // ── Naming modal ──────────────────────────────────────────────────────────
+    let selectedGender = localStorage.getItem('dogGender') || 'boy';
+
+    function openNameModal(fromSettings) {
+      dogNameInput.value = localStorage.getItem('dogName') || '';
+      selectedGender = localStorage.getItem('dogGender') || 'boy';
+      btnBoy.classList.toggle('selected', selectedGender === 'boy');
+      btnGirl.classList.toggle('selected', selectedGender === 'girl');
+      nameCancelBtn.style.display = fromSettings ? 'block' : 'none';
+      nameModal.classList.add('open');
+    }
+
+    function closeNameModal() { nameModal.classList.remove('open'); }
+
+    [btnBoy, btnGirl].forEach(btn => btn.addEventListener('click', () => {
+      selectedGender = btn.dataset.g;
+      btnBoy.classList.toggle('selected', selectedGender === 'boy');
+      btnGirl.classList.toggle('selected', selectedGender === 'girl');
+    }));
+
+    nameSubmitBtn.addEventListener('click', () => {
+      const name = dogNameInput.value.trim();
+      if (!name) { dogNameInput.focus(); return; }
+      localStorage.setItem('dogName', name);
+      localStorage.setItem('dogGender', selectedGender);
+      closeNameModal();
+      // Update tap-to-start title
+      tapTitle.textContent = `${name} wants to talk!`;
+    });
+
+    nameCancelBtn.addEventListener('click', closeNameModal);
+
+    // ── Top-right controls ────────────────────────────────────────────────────
+    let controlsFadeTimer = null;
+    topControls.addEventListener('click', () => {
+      topControls.classList.add('lit');
+      clearTimeout(controlsFadeTimer);
+      controlsFadeTimer = setTimeout(() => topControls.classList.remove('lit'), 3000);
+    });
+
+    settingsBtnEl.addEventListener('click', (e) => { e.stopPropagation(); openNameModal(true); });
+
+    trophyBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderCollectionGrid();
+      collModal.classList.add('open');
+    });
+    collCloseBtn.addEventListener('click', () => collModal.classList.remove('open'));
+
+    ttsBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      ttsEnabled = !ttsEnabled;
+      localStorage.setItem('ttsEnabled', ttsEnabled);
+      updateTtsBtn();
+      if (!ttsEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    });
+
+    // ── Init: show naming modal on first launch ───────────────────────────────
+    function init() {
+      if (!localStorage.getItem('dogName')) {
+        openNameModal(false);
+      } else {
+        tapTitle.textContent = `${getDogName()} wants to talk!`;
+      }
+    }
+    init();
+
     // ── Tap to start ──────────────────────────────────────────────────────────
     tapOverlay.addEventListener('click', () => {
+      if (nameModal.classList.contains('open')) return; // name modal takes priority
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
