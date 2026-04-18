@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Make Your Dog Talk</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #status {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+
+    #error {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      font-size: 16px;
+      text-align: center;
+      padding: 20px;
+      z-index: 10;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline muted></video>
+  <div id="status"></div>
+  <div id="error"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    const error = document.getElementById('error');
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false
+        });
+        video.srcObject = stream;
+        video.addEventListener('loadedmetadata', () => {
+          status.textContent = 'Camera active';
+        });
+      } catch (err) {
+        error.style.display = 'block';
+        if (err.name === 'NotAllowedError') {
+          error.textContent = 'Camera permission denied. Please allow camera access and reload.';
+        } else if (err.name === 'NotFoundError') {
+          error.textContent = 'No camera found on this device.';
+        } else {
+          error.textContent = 'Could not start camera: ' + err.message;
+        }
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
