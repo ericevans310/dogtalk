@@ -50,6 +50,16 @@
       letter-spacing: 0.5px;
     }
 
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
     #error {
       position: fixed;
       top: 50%;
@@ -98,6 +108,7 @@
 </head>
 <body>
   <video id="video" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
   <div id="status"></div>
   <div id="detection"></div>
   <div id="error"></div>
@@ -113,10 +124,69 @@
 
   <script>
     const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const ctx = overlay.getContext('2d');
     const statusEl = document.getElementById('status');
     const detectionEl = document.getElementById('detection');
     const errorEl = document.getElementById('error');
     const tapOverlay = document.getElementById('tap-overlay');
+
+    function resizeCanvas() {
+      overlay.width = window.innerWidth;
+      overlay.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawGlow(bbox) {
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      if (!bbox) return;
+
+      const [bx, by, bw, bh] = bbox;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const cw = overlay.width;
+      const ch = overlay.height;
+
+      // Match object-fit: cover scaling
+      const scale = Math.max(cw / vw, ch / vh);
+      const ox = (cw - vw * scale) / 2;
+      const oy = (ch - vh * scale) / 2;
+
+      const x = bx * scale + ox;
+      const y = by * scale + oy;
+      const w = bw * scale;
+      const h = bh * scale;
+
+      // Outer glow
+      ctx.shadowColor = 'rgba(255, 220, 50, 1)';
+      ctx.shadowBlur = 30;
+      ctx.strokeStyle = 'rgba(255, 220, 50, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+
+      // Inner bright line (second pass reinforces the glow)
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+
+      // Corner accents
+      const corner = Math.min(w, h) * 0.15;
+      ctx.shadowBlur = 15;
+      ctx.strokeStyle = 'rgba(255, 220, 50, 1)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      // top-left
+      ctx.moveTo(x, y + corner); ctx.lineTo(x, y); ctx.lineTo(x + corner, y);
+      // top-right
+      ctx.moveTo(x + w - corner, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + corner);
+      // bottom-right
+      ctx.moveTo(x + w, y + h - corner); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - corner, y + h);
+      // bottom-left
+      ctx.moveTo(x + corner, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - corner);
+      ctx.stroke();
+    }
 
     // COCO-SSD class → fun label shown on screen
     const LABEL_MAP = {
@@ -358,12 +428,14 @@
             const confidence = Math.round(top.score * 100);
             const label = LABEL_MAP[top.class] || top.class;
             detectionEl.textContent = label + '  ' + confidence + '%';
+            drawGlow(top.bbox);
 
             if (SOUND_MAP[top.class]) {
               playSound(top.class);
             }
           } else {
             detectionEl.textContent = '';
+            drawGlow(null);
           }
         } catch (err) {
           // video not ready yet, skip frame
