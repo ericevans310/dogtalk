@@ -277,8 +277,8 @@
       // Animals
       'person':        ['crowd-cheer.mp3', 'person-applause.mp3', 'person-laugh.mp3', 'person-cough.mp3'],
       'bird':          'bird.mp3',
-      'cat':           ['cat.mp3', 'cat-meow2.mp3', 'cat-meow3.mp3', 'cat-meow4.mp3', 'cat-meow5.mp3', 'cat-hiss.mp3', 'cat-purr.mp3', 'cat-growl.mp3', 'cat-street.mp3'],
-      'dog':           ['dog.mp3', 'dog-bark2.mp3', 'dog-bark3.mp3', 'dog-puppy.mp3', 'dog-aggressive.mp3', 'dog-lively.mp3', 'dog-guard.mp3'],
+      'cat':           ['cat.mp3', 'cat-meow2.mp3', 'cat-meow4.mp3', 'cat-meow5.mp3', 'cat-hiss.mp3', 'cat-purr.mp3', 'cat-growl.mp3', 'cat-voice.mp3', 'cat-calling.mp3', 'cat-scream.mp3', 'cat-cats-growl.mp3'],
+      'dog':           ['dog.mp3', 'dog-bark2.mp3', 'dog-lively.mp3', 'dog-puppy.mp3', 'dog-guard.mp3', 'dog-howl.mp3', 'dog-singing.mp3', 'dog-whine-bark.mp3'],
       'horse':         'horse.mp3',
       'sheep':         'sheep.mp3',
       'cow':           'cow.mp3',
@@ -295,14 +295,13 @@
       'truck':         'truck.mp3',
       'boat':          'boat.mp3',
 
-      // Electronics
+      // Electronics & screens
       'tv':            'tv.mp3',
       'laptop':        'laptop.mp3',
       'keyboard':      'keyboard.mp3',
       'cell phone':    'cell-phone.mp3',
       'microwave':     'microwave.mp3',
       'clock':         'clock.mp3',
-      'bed':           'bed.mp3',
 
       // Home
       'toilet':        'toilet.mp3',
@@ -325,9 +324,9 @@
       'sandwich':      'eating.mp3',
       'donut':         'eating.mp3',
       'cake':          'eating.mp3',
+      'hot dog':       'eating.mp3',
 
       // Food — sizzly
-      'hot dog':       'sizzle.mp3',
       'pizza':         'sizzle.mp3',
 
       // Sports
@@ -343,11 +342,13 @@
       'refrigerator':  'refrigerator.mp3',
       'toaster':       'toaster.mp3',
       'oven':          'microwave.mp3',
+      'microwave oven': 'microwave.mp3',
 
-      // Misc
+      // Misc household
       'teddy bear':    'teddy-bear.mp3',
       'vase':          'glass-clink.mp3',
       'bowl':          'glass-clink.mp3',
+      'wine glass':    'wine-glass.mp3',
       'fork':          'eating.mp3',
       'knife':         'eating.mp3',
       'spoon':         'eating.mp3',
@@ -456,8 +457,9 @@
         detectBusy = true;
         try {
           const predictions = await model.detect(video);
-          if (predictions.length > 0) {
-            const top = predictions[0];
+          const confident = predictions.filter(p => p.score >= 0.38);
+          if (confident.length > 0) {
+            const top = confident[0];
             const detected = top.class;
 
             // Lock-on: require LOCK_FRAMES consecutive detections before switching
@@ -486,6 +488,11 @@
               playSound(displayClass);
             }
           } else {
+            // Nothing confident — slowly decay the lock so the app doesn't stay
+            // frozen on a class after the object leaves the frame
+            candidateCount = 0;
+            candidateClass = null;
+            if (!isPlaying) lockedClass = null;
             detectionEl.textContent = '';
             drawGlow(null);
           }
