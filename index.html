@@ -16,17 +16,14 @@
 
     #video {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       object-fit: cover;
     }
 
     #status {
       position: fixed;
-      top: 12px;
-      left: 12px;
+      top: 12px; left: 12px;
       color: #fff;
       font-family: -apple-system, sans-serif;
       font-size: 14px;
@@ -35,35 +32,62 @@
       z-index: 10;
     }
 
-    #detection {
-      position: fixed;
-      bottom: 40px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      color: #fff;
-      font-family: -apple-system, sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      z-index: 10;
-      letter-spacing: 0.5px;
-    }
-
     #overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       pointer-events: none;
       z-index: 5;
     }
 
+    #speech-bubble {
+      position: fixed;
+      background: #fff;
+      color: #111;
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 16px;
+      font-weight: 800;
+      max-width: 240px;
+      min-width: 80px;
+      text-align: center;
+      pointer-events: none;
+      z-index: 20;
+      display: none;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+      line-height: 1.35;
+      letter-spacing: -0.2px;
+    }
+    #speech-bubble.above {
+      transform: translateX(-50%) translateY(-100%);
+      margin-top: -10px;
+    }
+    #speech-bubble.above::after {
+      content: '';
+      position: absolute;
+      bottom: -12px; left: 50%;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
+      border-top-color: #fff;
+      border-bottom: none;
+    }
+    #speech-bubble.below {
+      transform: translateX(-50%);
+      margin-top: 10px;
+    }
+    #speech-bubble.below::after {
+      content: '';
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
+      border-bottom-color: #fff;
+      border-top: none;
+    }
+
     #error {
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       color: #fff;
       font-family: -apple-system, sans-serif;
@@ -88,29 +112,16 @@
       cursor: pointer;
       user-select: none;
     }
-
-    #tap-overlay .emoji {
-      font-size: 72px;
-      margin-bottom: 20px;
-    }
-
-    #tap-overlay .title {
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    #tap-overlay .sub {
-      font-size: 16px;
-      opacity: 0.75;
-    }
+    #tap-overlay .emoji { font-size: 72px; margin-bottom: 20px; }
+    #tap-overlay .title { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+    #tap-overlay .sub   { font-size: 16px; opacity: 0.75; }
   </style>
 </head>
 <body>
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
   <div id="status"></div>
-  <div id="detection"></div>
+  <div id="speech-bubble"></div>
   <div id="error"></div>
 
   <div id="tap-overlay">
@@ -123,159 +134,465 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd/dist/coco-ssd.min.js"></script>
 
   <script>
-    const video = document.getElementById('video');
-    const overlay = document.getElementById('overlay');
-    const ctx = overlay.getContext('2d');
-    const statusEl = document.getElementById('status');
-    const detectionEl = document.getElementById('detection');
-    const errorEl = document.getElementById('error');
+    const video     = document.getElementById('video');
+    const overlay   = document.getElementById('overlay');
+    const ctx       = overlay.getContext('2d');
+    const statusEl  = document.getElementById('status');
+    const bubbleEl  = document.getElementById('speech-bubble');
+    const errorEl   = document.getElementById('error');
     const tapOverlay = document.getElementById('tap-overlay');
 
     function resizeCanvas() {
-      overlay.width = window.innerWidth;
+      overlay.width  = window.innerWidth;
       overlay.height = window.innerHeight;
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // ── Canvas glow ──────────────────────────────────────────────────────────
     function drawGlow(bbox) {
       ctx.clearRect(0, 0, overlay.width, overlay.height);
       if (!bbox) return;
-
       const [bx, by, bw, bh] = bbox;
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      const cw = overlay.width;
-      const ch = overlay.height;
-
-      // Match object-fit: cover scaling
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const cw = overlay.width,    ch = overlay.height;
       const scale = Math.max(cw / vw, ch / vh);
       const ox = (cw - vw * scale) / 2;
       const oy = (ch - vh * scale) / 2;
+      const x = bx * scale + ox, y = by * scale + oy;
+      const w = bw * scale,       h = bh * scale;
 
-      const x = bx * scale + ox;
-      const y = by * scale + oy;
-      const w = bw * scale;
-      const h = bh * scale;
-
-      // Outer glow
-      ctx.shadowColor = 'rgba(255, 220, 50, 1)';
+      ctx.shadowColor = 'rgba(255,220,50,1)';
       ctx.shadowBlur = 30;
-      ctx.strokeStyle = 'rgba(255, 220, 50, 0.9)';
+      ctx.strokeStyle = 'rgba(255,220,50,0.9)';
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, w, h);
-
-      // Inner bright line (second pass reinforces the glow)
       ctx.shadowBlur = 10;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, w, h);
-
-      // Corner accents
       const corner = Math.min(w, h) * 0.15;
       ctx.shadowBlur = 15;
-      ctx.strokeStyle = 'rgba(255, 220, 50, 1)';
+      ctx.strokeStyle = 'rgba(255,220,50,1)';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      // top-left
       ctx.moveTo(x, y + corner); ctx.lineTo(x, y); ctx.lineTo(x + corner, y);
-      // top-right
       ctx.moveTo(x + w - corner, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + corner);
-      // bottom-right
       ctx.moveTo(x + w, y + h - corner); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - corner, y + h);
-      // bottom-left
       ctx.moveTo(x + corner, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - corner);
       ctx.stroke();
     }
 
-    // COCO-SSD class → fun label shown on screen
+    // ── Speech bubble ─────────────────────────────────────────────────────────
+    function showBubble(text, bbox) {
+      if (!text || !bbox) { bubbleEl.style.display = 'none'; return; }
+      const [bx, by, bw, bh] = bbox;
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const cw = overlay.width,    ch = overlay.height;
+      const scale = Math.max(cw / vw, ch / vh);
+      const ox = (cw - vw * scale) / 2;
+      const oy = (ch - vh * scale) / 2;
+
+      const screenX   = bx * scale + ox + (bw * scale) / 2;
+      const bboxTop   = by * scale + oy;
+      const bboxBot   = (by + bh) * scale + oy;
+      const clampedX  = Math.max(130, Math.min(cw - 130, screenX));
+
+      bubbleEl.textContent = text;
+      bubbleEl.style.left  = clampedX + 'px';
+
+      if (bboxTop > 120) {
+        bubbleEl.className  = 'above';
+        bubbleEl.style.top  = bboxTop + 'px';
+      } else {
+        bubbleEl.className  = 'below';
+        bubbleEl.style.top  = bboxBot + 'px';
+      }
+      bubbleEl.style.display = 'block';
+    }
+
+    // ── Label map ─────────────────────────────────────────────────────────────
     const LABEL_MAP = {
-      'person':        '👤 A human! Hello there!',
-      'bicycle':       '🚲 A bicycle! Ding ding!',
-      'car':           '🚗 Vroom! A car!',
-      'motorcycle':    '🏍️ A motorcycle! So loud!',
-      'airplane':      '✈️ An airplane way up high!',
-      'bus':           '🚌 The bus is here!',
-      'train':         '🚂 Choo choo! A train!',
-      'truck':         '🚚 A big truck rumbling by!',
-      'boat':          '⛵ A boat on the water!',
-      'traffic light': '🚦 A traffic light!',
-      'fire hydrant':  '🔴 A fire hydrant!',
-      'stop sign':     '🛑 Stop right there!',
-      'parking meter': '🅿️ A parking meter!',
-      'bench':         '🪑 A bench to sit on!',
-      'bird':          '🐦 A bird! Tweet tweet!',
-      'cat':           '🐈 A cat! My nemesis!',
-      'dog':           '🐕 Another dog! Woof woof!',
-      'horse':         '🐎 A horse! So majestic!',
-      'sheep':         '🐑 A fluffy sheep!',
-      'cow':           '🐄 A cow! Moo!',
-      'elephant':      '🐘 Whoa, an elephant!',
-      'bear':          '🐻 A bear! Watch out!',
-      'zebra':         '🦓 A zebra! Cool stripes!',
-      'giraffe':       '🦒 A giraffe! So tall!',
-      'backpack':      '🎒 A backpack full of stuff!',
-      'umbrella':      '☂️ An umbrella for rainy days!',
-      'handbag':       '👜 A fancy handbag!',
-      'tie':           '👔 A fancy tie!',
-      'suitcase':      '🧳 Going somewhere?',
-      'frisbee':       '🥏 A frisbee! Fetch!',
-      'skis':          '⛷️ Skis! Hit the slopes!',
-      'snowboard':     '🏂 A snowboard! Shred it!',
-      'sports ball':   '⚽ A ball! Let\'s play!',
-      'kite':          '🪁 A kite flying high!',
-      'baseball bat':  '⚾ A baseball bat!',
-      'baseball glove':'🧤 A baseball glove!',
-      'skateboard':    '🛹 A skateboard! Rad!',
-      'surfboard':     '🏄 A surfboard! Hang ten!',
-      'tennis racket': '🎾 A tennis racket!',
-      'bottle':        '🍶 A bottle!',
-      'wine glass':    '🍷 A wine glass! Clink!',
-      'cup':           '☕ A cup! Hot stuff!',
-      'fork':          '🍴 A fork!',
-      'knife':         '🔪 A knife! Careful!',
-      'spoon':         '🥄 A spoon!',
-      'bowl':          '🥣 A bowl of something yummy!',
-      'banana':        '🍌 A banana! Nom nom!',
-      'apple':         '🍎 An apple a day!',
-      'sandwich':      '🥪 A sandwich! Yummy!',
-      'orange':        '🍊 A juicy orange!',
-      'broccoli':      '🥦 Broccoli! Eat your greens!',
-      'carrot':        '🥕 A crunchy carrot!',
-      'hot dog':       '🌭 A hot dog! Sizzling!',
-      'pizza':         '🍕 PIZZA! My favorite!',
-      'donut':         '🍩 A donut! So sweet!',
-      'cake':          '🎂 Cake! Is it a birthday?',
-      'chair':         '🪑 A chair to sit on!',
-      'couch':         '🛋️ A cozy couch!',
-      'potted plant':  '🌿 A plant! Growing nicely!',
-      'bed':           '🛏️ A bed! Naptime!',
-      'dining table':  '🍽️ A dining table!',
-      'toilet':        '🚽 The toilet! Relief!',
-      'tv':            '📺 A TV! What\'s on?',
-      'laptop':        '💻 A laptop! Clickety clack!',
-      'mouse':         '🖱️ A computer mouse!',
-      'remote':        '🎮 A remote control!',
-      'keyboard':      '⌨️ A keyboard! Type type type!',
-      'cell phone':    '📱 A phone! Is it ringing?',
-      'microwave':     '📡 A microwave! Ding!',
-      'oven':          '🍳 An oven! Something cooking!',
-      'toaster':       '🍞 A toaster! Pop!',
-      'sink':          '🚿 A sink! Running water!',
-      'refrigerator':  '🧊 A fridge full of food!',
-      'book':          '📚 A book! So educational!',
-      'clock':         '⏰ A clock! Tick tock!',
-      'vase':          '🏺 A fancy vase!',
-      'scissors':      '✂️ Scissors! Snip snip!',
-      'teddy bear':    '🧸 A teddy bear! How cute!',
-      'hair drier':    '💨 A hair dryer! Breezy!',
-      'toothbrush':    '🪥 A toothbrush! Brush brush!',
+      'person':       '👤 Human!',       'bicycle':     '🚲 Bicycle!',
+      'car':          '🚗 Car!',          'motorcycle':  '🏍️ Motorcycle!',
+      'airplane':     '✈️ Airplane!',     'bus':         '🚌 Bus!',
+      'train':        '🚂 Train!',        'truck':       '🚚 Truck!',
+      'boat':         '⛵ Boat!',         'traffic light':'🚦 Traffic light!',
+      'fire hydrant': '🔴 Fire hydrant!', 'stop sign':   '🛑 Stop sign!',
+      'bench':        '🪑 Bench!',        'bird':        '🐦 Bird!',
+      'cat':          '🐈 Cat!',          'dog':         '🐕 Dog!',
+      'horse':        '🐎 Horse!',        'sheep':       '🐑 Sheep!',
+      'cow':          '🐄 Cow!',          'elephant':    '🐘 Elephant!',
+      'bear':         '🐻 Bear!',         'zebra':       '🦓 Zebra!',
+      'giraffe':      '🦒 Giraffe!',      'backpack':    '🎒 Backpack!',
+      'umbrella':     '☂️ Umbrella!',     'handbag':     '👜 Handbag!',
+      'tie':          '👔 Tie!',          'suitcase':    '🧳 Suitcase!',
+      'frisbee':      '🥏 Frisbee!',      'skis':        '⛷️ Skis!',
+      'snowboard':    '🏂 Snowboard!',    'sports ball': '⚽ Ball!',
+      'kite':         '🪁 Kite!',         'baseball bat':'⚾ Baseball bat!',
+      'baseball glove':'🧤 Baseball glove!','skateboard': '🛹 Skateboard!',
+      'surfboard':    '🏄 Surfboard!',    'tennis racket':'🎾 Tennis racket!',
+      'bottle':       '🍶 Bottle!',       'wine glass':  '🍷 Wine glass!',
+      'cup':          '☕ Cup!',           'fork':        '🍴 Fork!',
+      'knife':        '🔪 Knife!',        'spoon':       '🥄 Spoon!',
+      'bowl':         '🥣 Bowl!',         'banana':      '🍌 Banana!',
+      'apple':        '🍎 Apple!',        'sandwich':    '🥪 Sandwich!',
+      'orange':       '🍊 Orange!',       'broccoli':    '🥦 Broccoli!',
+      'carrot':       '🥕 Carrot!',       'hot dog':     '🌭 Hot dog!',
+      'pizza':        '🍕 Pizza!',        'donut':       '🍩 Donut!',
+      'cake':         '🎂 Cake!',         'chair':       '🪑 Chair!',
+      'couch':        '🛋️ Couch!',        'potted plant':'🌿 Plant!',
+      'bed':          '🛏️ Bed!',          'dining table':'🍽️ Table!',
+      'toilet':       '🚽 Toilet!',       'tv':          '📺 TV!',
+      'laptop':       '💻 Laptop!',       'mouse':       '🖱️ Mouse!',
+      'remote':       '🎮 Remote!',       'keyboard':    '⌨️ Keyboard!',
+      'cell phone':   '📱 Phone!',        'microwave':   '📡 Microwave!',
+      'oven':         '🍳 Oven!',         'toaster':     '🍞 Toaster!',
+      'sink':         '🚿 Sink!',         'refrigerator':'🧊 Fridge!',
+      'book':         '📚 Book!',         'clock':       '⏰ Clock!',
+      'vase':         '🏺 Vase!',         'scissors':    '✂️ Scissors!',
+      'teddy bear':   '🧸 Teddy bear!',   'hair drier':  '💨 Hair dryer!',
+      'toothbrush':   '🪥 Toothbrush!',
     };
 
-    // COCO-SSD class → sound filename (only classes with sounds >1s)
+    // ── Dog-POV funny quotes ──────────────────────────────────────────────────
+    const QUOTES_MAP = {
+      'person': [
+        "PET ME RIGHT NOW 🐾",
+        "YOU'RE HOME!! YOU'RE HOME!!",
+        "Walk time? WALK TIME??",
+        "Belly rubs. Not optional.",
+        "I missed you. All 5 minutes.",
+        "Did someone say TREAT??",
+        "I love you so much it hurts.",
+        "Please. I'm starving. (5 min ago)",
+      ],
+      'dog': [
+        "NEW FRIEND!! I LOVE YOU!!",
+        "WHO ARE YOU I LOVE YOU",
+        "Wanna sniff butts? I'll go first.",
+        "YOU'RE ALSO A DOG!! WOW!!",
+        "Play?? PLAY?? LET'S PLAY!!",
+        "Another good boy detected 🐾",
+        "I would die for you and I just met you.",
+      ],
+      'cat': [
+        "ARCH NEMESIS DETECTED 😤",
+        "DO I CHASE IT?? I CHASE IT.",
+        "Why does it just... stare",
+        "Suspicious. Very suspicious.",
+        "I do not trust this creature.",
+        "It acts like it owns the place.",
+        "One day I will lick its face.",
+      ],
+      'bird': [
+        "THE AUDACITY. IN MY YARD.",
+        "I almost caught one once. Almost.",
+        "INTRUDER ALERT 🚨",
+        "I could catch it. I choose not to.",
+        "Come down here and say that.",
+      ],
+      'horse': [
+        "That's just a BIG dog. Right?",
+        "Very large. I respect it greatly.",
+        "It smells interesting. Intrigued.",
+        "Same energy as me but bigger.",
+      ],
+      'cow': [
+        "It says MOO. I say WOOF. ✌️",
+        "Big and round. 10/10 would sniff.",
+        "We have an understanding.",
+      ],
+      'sheep': [
+        "I could herd these. I feel it.",
+        "Round and fluffy. Must chase.",
+        "My ancestral duty calls to me.",
+      ],
+      'elephant': [
+        "THAT IS A VERY BIG DOG.",
+        "I am going to bark at this.",
+        "Respect. Also fear. Mostly fear.",
+      ],
+      'bear': [
+        "ABORT. ABORT. ABORT. 🐻",
+        "THIS IS NOT A BIG DOG.",
+        "Every hair on my body: standing.",
+        "We are leaving. RIGHT NOW.",
+      ],
+      'zebra': [
+        "A horse in PAJAMAS??",
+        "Why does it have stripes??",
+        "Is it a horse? Is it a cow?? BOTH??",
+      ],
+      'giraffe': [
+        "THAT NECK. THAT NECK. 😳",
+        "How does it fit through doors??",
+        "6 jumps to reach its face. Worth it.",
+      ],
+      'car': [
+        "I WILL CATCH IT THIS TIME.",
+        "BARK BARK BARK BARK",
+        "It's getting away!!",
+        "I chased one once. I won.",
+        "Beep beep means DANGER.",
+      ],
+      'motorcycle': [
+        "EXTREMELY LOUD. TELL EVERYONE.",
+        "BARK BARK BARK BARK BARK",
+        "THE NOISE. THE TERRIBLE NOISE.",
+      ],
+      'bicycle': [
+        "WHY IS THE WHEEL SPINNING",
+        "TWO WHEELS. SUSPICIOUS.",
+        "I will chase it. I always chase it.",
+      ],
+      'bus': [
+        "Big loud box on wheels.",
+        "My human gets on this. I wait alone.",
+        "I don't trust anything this big.",
+      ],
+      'truck': [
+        "BIGGER. LOUDER. MORE BARKING.",
+        "BARK BARK BARK BARK BARK x100",
+      ],
+      'airplane': [
+        "I can hear it but I can't find it.",
+        "It smells like... nothing up there.",
+      ],
+      'train': [
+        "LOUD SNAKE ON RAILS. DANGER.",
+        "MUST BARK. MUST BARK NOW.",
+        "It's so fast and I love/hate it.",
+      ],
+      'boat': [
+        "Floating house? Very confused.",
+        "Big water: NOT for dogs. Mostly.",
+      ],
+      'pizza': [
+        "IS THAT FOR ME??",
+        "I only need one slice. All of it.",
+        "GREATEST INVENTION IN HISTORY.",
+        "I can be very still and patient.",
+      ],
+      'hot dog': [
+        "They named food after ME. Honored.",
+        "Wait... that's not a real dog right",
+        "I would eat this. Immediately.",
+      ],
+      'apple': [
+        "Fruit. Not a ball. Rude.",
+        "Round-ish. Disappointing.",
+      ],
+      'banana': [
+        "Yellow. Curved. Approved.",
+        "Smells interesting. Will investigate.",
+      ],
+      'sandwich': [
+        "Leave the room. Just 2 seconds.",
+        "I don't know what's in there but—",
+        "Every ingredient smells incredible.",
+      ],
+      'cake': [
+        "IS THIS MY BIRTHDAY?? 🎂",
+        "I would like all of this please.",
+        "One bite. Okay maybe all of it.",
+      ],
+      'donut': [
+        "Round. Sweet. Give it to me.",
+        "I will sit. I will stay. GIVE IT.",
+      ],
+      'broccoli': [
+        "They call this food. I disagree.",
+        "Green stick. Hard pass.",
+      ],
+      'carrot': [
+        "Orange stick. Crunchy. I'd eat it.",
+        "Not bad actually. Still not a treat.",
+      ],
+      'orange': [
+        "Round. Citrusy. Suspicious.",
+        "Smells weird. Will sniff more.",
+      ],
+      'toilet': [
+        "My forbidden water bowl 🚽",
+        "Cool, refreshing, and APPARENTLY WRONG.",
+        "They say no every time. Every time.",
+      ],
+      'sink': [
+        "Wall water dispenser. Respect.",
+        "I prefer puddles but this works.",
+      ],
+      'refrigerator': [
+        "The cold food box 🧊",
+        "Every time it opens: I appear.",
+        "Food is definitely in there.",
+      ],
+      'toaster': [
+        "It makes bread go POP.",
+        "I jump every time. EVERY time.",
+        "The betrayal of the sudden POP.",
+      ],
+      'microwave': [
+        "BEEP = food exists. I know this.",
+        "I hear the beep from anywhere.",
+      ],
+      'oven': [
+        "The warm food cave.",
+        "Something amazing is in there.",
+      ],
+      'tv': [
+        "I saw a dog on here once.",
+        "We made eye contact. We bonded.",
+        "Dogs live inside the box sometimes.",
+      ],
+      'cell phone': [
+        "They look at this instead of me. 😤",
+        "I sat on it once. Not sorry.",
+        "Me > whatever is on that screen.",
+      ],
+      'laptop': [
+        "I will sit on this for attention.",
+        "Warm. Perfect nap surface. Mine.",
+        "Typing = ignoring me. Unacceptable.",
+      ],
+      'keyboard': [
+        "I walked on this and sent an email.",
+        "jkhfkjdhfkjdsh (that was me)",
+      ],
+      'clock': [
+        "Is it walk o'clock yet??",
+        "Dinner is soon. I feel it.",
+        "Time means nothing except dinner time.",
+      ],
+      'backpack': [
+        "Oh no. They're LEAVING. 😢",
+        "Backpack = goodbye. I hate backpack.",
+        "Please. I'll be so lonely.",
+        "No no no no no no no.",
+      ],
+      'suitcase': [
+        "No. No no no no no. NO.",
+        "They're going away. Forever maybe.",
+      ],
+      'umbrella': [
+        "It opens so fast. Don't trust it.",
+        "Rain = muddy puddles. I do love that.",
+      ],
+      'bed': [
+        "They say I'm not allowed. They're wrong.",
+        "This is mine. Officially mine now.",
+        "Best nap location. Confirmed.",
+      ],
+      'couch': [
+        "I'm technically allowed. Maybe.",
+        "Ultimate nap destination. 🛋️",
+      ],
+      'chair': [
+        "I sit here and stare until fed.",
+        "Good staring chair. Strategic location.",
+      ],
+      'teddy bear': [
+        "I have destroyed seventeen of these.",
+        "Mine. This is mine. All mine.",
+        "Soft. Made for carrying everywhere.",
+      ],
+      'sports ball': [
+        "BALL!! THROW IT!! PLEASE!!",
+        "BALL BALL BALL BALL BALL 🎾",
+        "I will fetch this for LITERALLY ever.",
+      ],
+      'frisbee': [
+        "THE FLYING DISC!! I KNOW THIS!!",
+        "THROW IT THROW IT THROW IT 🥏",
+      ],
+      'surfboard': [
+        "Why is the human on the water??",
+        "Big water = not for me. Mostly.",
+      ],
+      'fire hydrant': [
+        "This one is MINE. 🔴",
+        "Property of all dogs. By law.",
+        "I have claimed this officially.",
+      ],
+      'stop sign': [
+        "STOP (I personally would not stop)",
+        "Red = treat? Should mean treat.",
+      ],
+      'bench': [
+        "Sit here with my human. Yes. ❤️",
+        "Good walking rest spot. Approved.",
+      ],
+      'potted plant': [
+        "Should I dig in this? I want to.",
+        "I sniffed it. Results: interesting.",
+      ],
+      'book': [
+        "Doesn't move or smell interesting.",
+        "No pictures. Zero chasing potential.",
+      ],
+      'vase': [
+        "I knocked one of these over once.",
+        "Fragile. I am... mostly aware.",
+      ],
+      'scissors': [
+        "GROOMING FLASHBACK. NO. 🐾",
+        "This means the trim is coming.",
+      ],
+      'hair drier': [
+        "THE LOUD WIND MACHINE. I HATE IT.",
+        "Bath then WIND MACHINE. Worst day.",
+      ],
+      'bottle': [
+        "Is there water in there? Give it.",
+        "They drink from this. I use puddles.",
+      ],
+      'wine glass': [
+        "Fancy water glass. Not for me.",
+        "I knocked one over. Mostly accident.",
+      ],
+      'bowl': [
+        "Empty?? MY BOWL IS EMPTY?? 😱",
+        "Fill it. Fill it RIGHT NOW.",
+      ],
+      'fork':        ["Smells like food was on this.", "Food delivery device. Respect."],
+      'knife':       ["Sharp. Do not lick. I licked it.", "Handle with care (unlike me)."],
+      'spoon':       ["Great for peanut butter. 10/10.", "I could eat off this. I have."],
+      'baseball bat':["Very large stick. Must chase.", "It's like... the ultimate stick."],
+      'tennis racket':["Ball-adjacent device. Suspicious.", "Where is the ball that goes with this??"],
+      'skateboard':  ["Wheeled board. Interesting.", "It moves on its own somehow."],
+      'snowboard':   ["Flat board for cold places.", "Snow = eating snow. I love snow."],
+      'skis':        ["Long sticks for feet. Strange.", "Humans have weird hobbies."],
+      'kite':        ["Flying thing. Must catch.", "It's up there! Why is it up there!"],
+      'tie':         ["Fabric neck thing. Chewable?", "Very chewable looking. I respect it."],
+      'handbag':     ["Small bag. Treat might be inside.", "I have sniffed many of these."],
+      'dining table':["Food happens on this surface.", "I sit next to this. Always."],
+      'hair drier':  ["THE LOUD WIND MACHINE. NO.", "Bath then WIND MACHINE. Worst day."],
+      'toothbrush':  ["They use this daily. I do not.", "Mint flavored? I'd consider it."],
+      'mouse':       ["Computer mouse. Not the animal.", "Not chewable. Still tempting."],
+      'remote':      ["They point this at the box.", "Clicking device. I chewed one once."],
+      'sink':        ["Wall water. I prefer puddles.", "Cool refreshing wall water."],
+    };
+
+    const DEFAULT_QUOTES = [
+      "What IS this thing?? 🐾",
+      "I should sniff this.",
+      "Interesting. Very interesting.",
+      "*intense sniffing sounds*",
+      "Should I bark? I'll bark.",
+      "My human would want to know about this.",
+    ];
+
+    function pickQuote(cls) {
+      const pool = QUOTES_MAP[cls] || DEFAULT_QUOTES;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // ── Sound map ─────────────────────────────────────────────────────────────
     const SOUND_MAP = {
+      // People
+      'person':        ['crowd-cheer.mp3', 'person-applause.mp3', 'person-laugh.mp3', 'person-cough.mp3', 'children-laugh.mp3'],
+
       // Animals
-      'person':        ['crowd-cheer.mp3', 'person-applause.mp3', 'person-laugh.mp3', 'person-cough.mp3'],
       'bird':          'bird.mp3',
       'cat':           ['cat.mp3', 'cat-meow2.mp3', 'cat-meow4.mp3', 'cat-meow5.mp3', 'cat-hiss.mp3', 'cat-purr.mp3', 'cat-growl.mp3', 'cat-voice.mp3', 'cat-calling.mp3', 'cat-scream.mp3', 'cat-cats-growl.mp3'],
       'dog':           ['dog.mp3', 'dog-bark2.mp3', 'dog-lively.mp3', 'dog-puppy.mp3', 'dog-guard.mp3', 'dog-howl.mp3', 'dog-singing.mp3', 'dog-whine-bark.mp3'],
@@ -284,6 +601,8 @@
       'cow':           'cow.mp3',
       'elephant':      'elephant.mp3',
       'bear':          'bear.mp3',
+      'zebra':         ['dog-howl.mp3', 'horse.mp3'],
+      'giraffe':       'elephant.mp3',
 
       // Vehicles
       'bicycle':       'bicycle.mp3',
@@ -295,7 +614,7 @@
       'truck':         'truck.mp3',
       'boat':          'boat.mp3',
 
-      // Electronics & screens
+      // Electronics
       'tv':            'tv.mp3',
       'laptop':        'laptop.mp3',
       'keyboard':      'keyboard.mp3',
@@ -312,6 +631,8 @@
       'bottle':        'bottle.mp3',
       'wine glass':    'wine-glass.mp3',
       'cup':           'bottle.mp3',
+      'bowl':          'glass-clink.mp3',
+      'vase':          'glass-clink.mp3',
 
       // Food — crunchy
       'apple':         'apple.mp3',
@@ -325,90 +646,82 @@
       'donut':         'eating.mp3',
       'cake':          'eating.mp3',
       'hot dog':       'eating.mp3',
+      'fork':          'eating.mp3',
+      'knife':         'eating.mp3',
+      'spoon':         'eating.mp3',
+      'dining table':  'eating.mp3',
 
       // Food — sizzly
       'pizza':         'sizzle.mp3',
 
       // Sports
       'surfboard':     'surfboard.mp3',
+      'sports ball':   'apple.mp3',
+      'baseball bat':  'baseball-bat.mp3',
+      'tennis racket': 'tennis-hit.mp3',
+      'frisbee':       'dog-lively.mp3',
 
       // Furniture
       'chair':         'chair.mp3',
       'couch':         'couch.mp3',
       'bed':           'bed.mp3',
-      'dining table':  'eating.mp3',
 
       // Appliances
       'refrigerator':  'refrigerator.mp3',
       'toaster':       'toaster.mp3',
       'oven':          'microwave.mp3',
-      'microwave oven': 'microwave.mp3',
 
-      // Misc household
+      // Misc
       'teddy bear':    'teddy-bear.mp3',
-      'vase':          'glass-clink.mp3',
-      'bowl':          'glass-clink.mp3',
-      'wine glass':    'wine-glass.mp3',
-      'fork':          'eating.mp3',
-      'knife':         'eating.mp3',
-      'spoon':         'eating.mp3',
+      'backpack':      'dog-puppy.mp3',
+      'suitcase':      'dog-puppy.mp3',
     };
 
+    // ── Audio ─────────────────────────────────────────────────────────────────
     const COOLDOWN_MS = 1000;
-    const LOCK_FRAMES = 5;   // consecutive frames before switching focus
-    let lockedClass = null;
-    let candidateClass = null;
-    let candidateCount = 0;
-    let lastPlayedFile = null;
-    let lastPlayedTime = 0;
-    let currentSource = null;
-    let isPlaying = false;
-    let model = null;
-    let detecting = false;
-    let detectBusy = false;
-    let started = false;
+    let lastPlayedFile = null, lastPlayedTime = 0;
+    let currentSource = null, isPlaying = false;
 
-    // Web Audio API — created on tap so iOS trusts it from the start
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     const bufferCache = {};
-    const allFiles = Object.values(SOUND_MAP).flat();
-    const uniqueFiles = [...new Set(allFiles)];
-
-    function pickFile(cls) {
-      const entry = SOUND_MAP[cls];
-      if (!entry) return null;
-      if (typeof entry === 'string') return bufferCache[entry] ? entry : null;
-      const available = entry.filter(f => bufferCache[f]);
-      if (!available.length) return null;
-      return available[Math.floor(Math.random() * available.length)];
-    }
+    const uniqueFiles = [...new Set(Object.values(SOUND_MAP).flat())];
 
     function loadSounds() {
       for (const file of uniqueFiles) {
         fetch('sounds/' + file)
           .then(r => r.arrayBuffer())
           .then(buf => audioCtx.decodeAudioData(buf))
-          .then(decoded => {
-            if (decoded.duration >= 1) bufferCache[file] = decoded;
-          })
+          .then(decoded => { if (decoded.duration >= 1) bufferCache[file] = decoded; })
           .catch(() => {});
       }
+    }
+
+    function pickFile(cls) {
+      const entry = SOUND_MAP[cls];
+      if (!entry) return null;
+      const files = typeof entry === 'string' ? [entry] : entry;
+      const avail = files.filter(f => bufferCache[f]);
+      return avail.length ? avail[Math.floor(Math.random() * avail.length)] : null;
     }
 
     function playSound(cls) {
       if (!audioCtx || isPlaying) return;
       const file = pickFile(cls);
       if (!file) return;
-
       const now = Date.now();
       if (file === lastPlayedFile && (now - lastPlayedTime) < COOLDOWN_MS) return;
 
+      const buf = bufferCache[file];
+      // Start at a random point within the first 2s for long sounds — adds variety
+      const maxOffset = buf.duration > 4 ? Math.min(2, buf.duration - 3) : 0;
+      const startOffset = maxOffset > 0 ? Math.random() * maxOffset : 0;
+
       const source = audioCtx.createBufferSource();
-      source.buffer = bufferCache[file];
+      source.buffer = buf;
       source.connect(audioCtx.destination);
       source.onended = () => { isPlaying = false; currentSource = null; lastPlayedTime = Date.now(); };
-      source.start(0);
+      source.start(0, startOffset);
       source.stop(audioCtx.currentTime + 3);
       isPlaying = true;
       currentSource = source;
@@ -416,26 +729,28 @@
       lastPlayedTime = now;
     }
 
+    // ── Detection — rolling vote window ──────────────────────────────────────
+    const VOTE_WINDOW  = 7;
+    const VOTE_THRESH  = 4;  // need ≥4 of 7 frames to commit
+    const MIN_CONF     = 0.38;
+
+    let voteBuffer  = [];   // last N { cls, bbox } or null
+    let activeClass = null;
+    let activeBbox  = null;
+    let activeQuote = null;
+
+    let model = null, detecting = false, detectBusy = false, started = false;
+
     async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-          audio: false
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         video.srcObject = stream;
-        video.addEventListener('loadedmetadata', () => {
-          statusEl.textContent = 'Loading model...';
-          loadModel();
-        });
+        video.addEventListener('loadedmetadata', () => { statusEl.textContent = 'Loading model...'; loadModel(); });
       } catch (err) {
         errorEl.style.display = 'block';
-        if (err.name === 'NotAllowedError') {
-          errorEl.textContent = 'Camera permission denied. Please allow camera access and reload.';
-        } else if (err.name === 'NotFoundError') {
-          errorEl.textContent = 'No camera found on this device.';
-        } else {
-          errorEl.textContent = 'Could not start camera: ' + err.message;
-        }
+        errorEl.textContent = err.name === 'NotAllowedError' ? 'Camera permission denied.' :
+                              err.name === 'NotFoundError'   ? 'No camera found.'          :
+                              'Could not start camera: ' + err.message;
       }
     }
 
@@ -445,75 +760,59 @@
         statusEl.textContent = 'Camera active';
         detecting = true;
         detectLoop();
-      } catch (err) {
-        statusEl.textContent = 'Model failed to load';
-      }
+      } catch { statusEl.textContent = 'Model failed to load'; }
     }
 
     async function detectLoop() {
       if (!detecting || !model) return;
-
       if (!detectBusy) {
         detectBusy = true;
         try {
-          const predictions = await model.detect(video);
-          const confident = predictions.filter(p => p.score >= 0.38);
-          if (confident.length > 0) {
-            const top = confident[0];
-            const detected = top.class;
+          const preds = await model.detect(video);
+          const best  = preds.filter(p => p.score >= MIN_CONF)[0] || null;
 
-            // Lock-on: require LOCK_FRAMES consecutive detections before switching
-            if (detected === lockedClass) {
-              candidateClass = null;
-              candidateCount = 0;
-            } else if (detected === candidateClass) {
-              candidateCount++;
-              if (candidateCount >= LOCK_FRAMES) {
-                lockedClass = candidateClass;
-                candidateClass = null;
-                candidateCount = 0;
-              }
-            } else {
-              candidateClass = detected;
-              candidateCount = 1;
-            }
+          // Push to rolling window
+          voteBuffer.push(best ? { cls: best.class, bbox: best.bbox } : null);
+          if (voteBuffer.length > VOTE_WINDOW) voteBuffer.shift();
 
-            const displayClass = lockedClass || detected;
-            const confidence = Math.round(top.score * 100);
-            const label = LABEL_MAP[displayClass] || displayClass;
-            detectionEl.textContent = label + '  ' + confidence + '%';
-            drawGlow(top.bbox);
+          // Count votes
+          const counts = {};
+          for (const v of voteBuffer) if (v) counts[v.cls] = (counts[v.cls] || 0) + 1;
+          const winner = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
 
-            if (SOUND_MAP[displayClass]) {
-              playSound(displayClass);
-            }
+          if (winner && counts[winner] >= VOTE_THRESH) {
+            const changed = winner !== activeClass;
+            activeClass = winner;
+            // Use the freshest bbox we have for the winning class
+            const fresh = [...voteBuffer].reverse().find(v => v && v.cls === winner);
+            if (fresh) activeBbox = fresh.bbox;
+            if (changed) activeQuote = pickQuote(winner);
+
+            drawGlow(activeBbox);
+            showBubble(activeQuote, activeBbox);
+            if (SOUND_MAP[activeClass]) playSound(activeClass);
           } else {
-            // Nothing confident — slowly decay the lock so the app doesn't stay
-            // frozen on a class after the object leaves the frame
-            candidateCount = 0;
-            candidateClass = null;
-            if (!isPlaying) lockedClass = null;
-            detectionEl.textContent = '';
-            drawGlow(null);
+            // No consensus yet — show raw glow but no bubble
+            drawGlow(best?.bbox || null);
+            if (!isPlaying) {
+              activeClass = null;
+              activeQuote = null;
+              showBubble(null, null);
+            }
           }
-        } catch (err) {
-          // video not ready yet, skip frame
-        }
+        } catch { /* frame not ready */ }
         detectBusy = false;
       }
-
       requestAnimationFrame(detectLoop);
     }
 
+    // ── Tap to start ──────────────────────────────────────────────────────────
     tapOverlay.addEventListener('click', () => {
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
-
-      // Create AudioContext inside user gesture — iOS trusts it immediately.
-      audioCtx = new AudioContext();
+      audioCtx = new AudioCtx();
       loadSounds();
-
       startCamera();
     });
   </script>
