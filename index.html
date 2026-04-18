@@ -888,15 +888,15 @@
 
       const source = audioCtx.createBufferSource();
       source.buffer = buf;
-      source.connect(audioCtx.destination);
+      // Duck the sound so the TTS voice is audible on top of the bark/meow/etc.
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.55;
+      source.connect(gain).connect(audioCtx.destination);
       let ended = false;
       const markDone = () => {
         if (ended) return;
         ended = true;
         isPlaying = false; currentSource = null; lastPlayedTime = Date.now();
-        if (activeClass === capturedClass && capturedQuote) {
-          speakQuote(capturedQuote, capturedClass);
-        }
       };
       source.onended = markDone;
       source.start(0, startOffset);
@@ -906,6 +906,14 @@
       setTimeout(markDone, 4000);
       isPlaying = true; currentSource = source;
       lastPlayedFile = file; lastPlayedTime = now;
+
+      // Fire the TTS voice alongside the sound so they mix, rather than
+      // waiting for the sound to finish. Small delay lets the bark kick in first.
+      if (capturedQuote) {
+        setTimeout(() => {
+          if (activeClass === capturedClass) speakQuote(capturedQuote, capturedClass);
+        }, 250);
+      }
     }
 
     // ── Detection — tier system ───────────────────────────────────────────────
