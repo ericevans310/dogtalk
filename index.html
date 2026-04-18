@@ -889,14 +889,21 @@
       const source = audioCtx.createBufferSource();
       source.buffer = buf;
       source.connect(audioCtx.destination);
-      source.onended = () => {
+      let ended = false;
+      const markDone = () => {
+        if (ended) return;
+        ended = true;
         isPlaying = false; currentSource = null; lastPlayedTime = Date.now();
         if (activeClass === capturedClass && capturedQuote) {
           speakQuote(capturedQuote, capturedClass);
         }
       };
+      source.onended = markDone;
       source.start(0, startOffset);
       source.stop(audioCtx.currentTime + 3);
+      // Safety net: if onended never fires (e.g. iOS Safari suspends the AudioContext),
+      // force-release the isPlaying lock so detection can keep triggering sounds.
+      setTimeout(markDone, 4000);
       isPlaying = true; currentSource = source;
       lastPlayedFile = file; lastPlayedTime = now;
     }
@@ -996,6 +1003,9 @@
         errorEl.textContent = err.name === 'NotAllowedError' ? 'Camera permission denied.' :
                               err.name === 'NotFoundError'   ? 'No camera found.' :
                               'Could not start camera: ' + err.message;
+        // Allow the user to retry by tapping the overlay again.
+        started = false;
+        if (!nameModal.classList.contains('open')) tapOverlay.style.display = 'flex';
       }
     }
 
@@ -1036,32 +1046,41 @@
           if (voteBuffer.length > MAX_VOTE_WINDOW) voteBuffer.shift();
 
           // 3. Track how many frames the active class has been absent
+          //    Use raw preds (unfiltered) so a dimmer-but-still-visible active class
+          //    does not get counted absent just because it fell below its tier minConf.
           if (activeClass) {
-            const stillSeen = frameDetections.some(d => d.cls === activeClass && d.conf >= ABSENT_CONF);
+            const stillSeen = preds.some(p => p.class === activeClass && p.score >= ABSENT_CONF);
             activeAbsentFrames = stillSeen ? 0 : activeAbsentFrames + 1;
           } else {
             activeAbsentFrames = 0;
           }
 
-          // 4. Build per-class stats using tier-specific vote window
-          const classStats = {};
+          // 4. Build per-class stats within each class's tier-specific vote window.
+          //    One pass per class keeps votes, peakScore, and recentBbox scoped to the
+          //    same window (previously peakScore spanned the full 15-frame buffer).
+          const classTier = {};
           for (const frame of voteBuffer) {
-            for (const det of frame) {
-              if (!classStats[det.cls]) {
-                classStats[det.cls] = { tier: det.tier, votes: 0, qualified: false,
-                                        recentBbox: null, recentConf: 0, peakScore: 0 };
-              }
-              // Always take the most recent bbox (later frames overwrite)
-              classStats[det.cls].recentBbox = det.bbox;
-              classStats[det.cls].recentConf = det.conf;
-              classStats[det.cls].peakScore  = Math.max(classStats[det.cls].peakScore, det.weightedScore);
-            }
+            for (const det of frame) if (!(det.cls in classTier)) classTier[det.cls] = det.tier;
           }
-          for (const cls of Object.keys(classStats)) {
-            const cfg = TIER_CONFIG[classStats[cls].tier];
-            const win = voteBuffer.slice(-cfg.voteWindow);
-            classStats[cls].votes     = win.filter(f => f.some(d => d.cls === cls)).length;
-            classStats[cls].qualified = classStats[cls].votes >= cfg.voteThresh;
+          const classStats = {};
+          for (const cls of Object.keys(classTier)) {
+            const tier = classTier[cls];
+            const cfg  = TIER_CONFIG[tier];
+            const win  = voteBuffer.slice(-cfg.voteWindow);
+            let votes = 0, peakScore = 0, recentBbox = null, recentConf = 0;
+            for (const frame of win) {
+              let seenThisFrame = false;
+              for (const det of frame) {
+                if (det.cls !== cls) continue;
+                seenThisFrame = true;
+                if (det.weightedScore > peakScore) peakScore = det.weightedScore;
+                recentBbox = det.bbox;
+                recentConf = det.conf;
+              }
+              if (seenThisFrame) votes++;
+            }
+            classStats[cls] = { tier, votes, qualified: votes >= cfg.voteThresh,
+                                recentBbox, recentConf, peakScore };
           }
 
           // 5. Find best qualified candidate by tier priority (T1 > T2 > T3)
@@ -1216,6 +1235,7 @@
       localStorage.setItem('dogGender', selectedGender);
       closeNameModal();
       tapTitle.textContent = `${name} wants to talk!`;
+      if (!started) tapOverlay.style.display = 'flex';
     });
 
     nameCancelBtn.addEventListener('click', closeNameModal);
@@ -1233,8 +1253,10 @@
       controlsFadeTimer = setTimeout(() => topControls.classList.remove('lit'), 3000);
     });
 
-    // Settings gear: tap 5× within 2s → Voice Lab; otherwise open name settings
+    // Settings gear: tap 5× within 2s → Voice Lab; single tap → name settings.
+    // A short debounce keeps the name modal from flashing during a 5-tap burst.
     let gearTapTimes = [];
+    let gearOpenTimer = null;
     settingsBtnEl.addEventListener('click', (e) => {
       e.stopPropagation();
       const now = Date.now();
@@ -1242,11 +1264,16 @@
       gearTapTimes.push(now);
       if (gearTapTimes.length >= 5) {
         gearTapTimes = [];
+        clearTimeout(gearOpenTimer); gearOpenTimer = null;
         closeNameModal();
         openVoiceLab();
         return;
       }
-      openNameModal(true);
+      clearTimeout(gearOpenTimer);
+      gearOpenTimer = setTimeout(() => {
+        gearOpenTimer = null;
+        openNameModal(true);
+      }, 350);
     });
 
     trophyBtnEl.addEventListener('click', (e) => {
@@ -1433,6 +1460,8 @@
     // ── Init ──────────────────────────────────────────────────────────────────
     function init() {
       if (!localStorage.getItem('dogName')) {
+        // Hide tap overlay so the name modal is interactable (it has a lower z-index)
+        tapOverlay.style.display = 'none';
         openNameModal(false);
       } else {
         tapTitle.textContent = `${getDogName()} wants to talk!`;
@@ -1441,15 +1470,17 @@
     init();
 
     // ── Tap to start ──────────────────────────────────────────────────────────
-    tapOverlay.addEventListener('click', () => {
-      if (nameModal.classList.contains('open')) return;
+    function startApp() {
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
-      audioCtx = new AudioCtx();
+      try { audioCtx = new AudioCtx(); } catch (e) { console.warn('AudioContext failed', e); }
       loadSounds();
       startCamera();
-    });
+    }
+    // Use pointerdown for snappier iOS response; fall back to click for desktop
+    tapOverlay.addEventListener('pointerdown', startApp);
+    tapOverlay.addEventListener('click', startApp);
   </script>
 </body>
 </html>
