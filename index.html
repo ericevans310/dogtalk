@@ -275,10 +275,10 @@
     // COCO-SSD class → sound filename (only classes with sounds >1s)
     const SOUND_MAP = {
       // Animals
-      'person':        'person.mp3',
+      'person':        ['person.mp3', 'person-baby-cry.mp3', 'person-laugh.mp3', 'person-cough.mp3', 'person-applause.mp3', 'person-heartbeat.mp3', 'person-phone.mp3', 'crowd-cheer.mp3'],
       'bird':          'bird.mp3',
-      'cat':           'cat.mp3',
-      'dog':           'dog.mp3',
+      'cat':           ['cat.mp3', 'cat-meow2.mp3', 'cat-meow3.mp3', 'cat-meow4.mp3', 'cat-meow5.mp3', 'cat-hiss.mp3', 'cat-purr.mp3', 'cat-growl.mp3', 'cat-street.mp3'],
+      'dog':           ['dog.mp3', 'dog-bark2.mp3', 'dog-bark3.mp3', 'dog-puppy.mp3', 'dog-aggressive.mp3', 'dog-lively.mp3', 'dog-guard.mp3'],
       'horse':         'horse.mp3',
       'sheep':         'sheep.mp3',
       'cow':           'cow.mp3',
@@ -367,7 +367,17 @@
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     const bufferCache = {};
-    const uniqueFiles = [...new Set(Object.values(SOUND_MAP))];
+    const allFiles = Object.values(SOUND_MAP).flat();
+    const uniqueFiles = [...new Set(allFiles)];
+
+    function pickFile(cls) {
+      const entry = SOUND_MAP[cls];
+      if (!entry) return null;
+      if (typeof entry === 'string') return bufferCache[entry] ? entry : null;
+      const available = entry.filter(f => bufferCache[f]);
+      if (!available.length) return null;
+      return available[Math.floor(Math.random() * available.length)];
+    }
 
     function loadSounds() {
       for (const file of uniqueFiles) {
@@ -382,9 +392,9 @@
     }
 
     function playSound(cls) {
-      const file = SOUND_MAP[cls];
-      if (!file || !audioCtx || !bufferCache[file]) return;
-      if (isPlaying) return;
+      if (!audioCtx || isPlaying) return;
+      const file = pickFile(cls);
+      if (!file) return;
 
       const now = Date.now();
       if (file === lastPlayedFile && (now - lastPlayedTime) < COOLDOWN_MS) return;
