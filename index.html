@@ -118,52 +118,102 @@
     const errorEl = document.getElementById('error');
     const tapOverlay = document.getElementById('tap-overlay');
 
-    // Map COCO-SSD class names to local MP3 filenames
+    // COCO-SSD class → sound filename in /sounds/
     const SOUND_MAP = {
-      'person':     'person.mp3',
-      'dog':        'dog.mp3',
-      'cat':        'cat.mp3',
-      'cow':        'cow.mp3',
-      'sheep':      'sheep.mp3',
-      'bird':       'bird.mp3',
-      'bear':       'bear.mp3',
-      'horse':      'horse.mp3',
-      'airplane':   'airplane.mp3',
-      'train':      'train.mp3',
-      'boat':       'boat.mp3',
-      'bus':        'bus.mp3',
-      'car':        'car.mp3',
-      'truck':      'truck.mp3',
-      'motorcycle': 'motorcycle.mp3',
-      'laptop':     'laptop.mp3',
-      'clock':      'clock.mp3',
-      'cell phone': 'cell-phone.mp3',
+      // Animals
+      'person':       'person.mp3',
+      'bird':         'bird.mp3',
+      'cat':          'cat.mp3',
+      'dog':          'dog.mp3',
+      'horse':        'horse.mp3',
+      'sheep':        'sheep.mp3',
+      'cow':          'cow.mp3',
+      'elephant':     'elephant.mp3',
+      'bear':         'bear.mp3',
+
+      // Vehicles
+      'bicycle':      'bicycle.mp3',
+      'car':          'car.mp3',
+      'motorcycle':   'motorcycle.mp3',
+      'airplane':     'airplane.mp3',
+      'bus':          'bus.mp3',
+      'train':        'train.mp3',
+      'truck':        'truck.mp3',
+      'boat':         'boat.mp3',
+
+      // Electronics & furniture
+      'tv':           'tv.mp3',
+      'laptop':       'laptop.mp3',
+      'mouse':        'mouse.mp3',
+      'remote':       'remote.mp3',
+      'keyboard':     'keyboard.mp3',
+      'cell phone':   'cell-phone.mp3',
+      'microwave':    'microwave.mp3',
+      'clock':        'clock.mp3',
+      'bed':          'bed.mp3',
+      'book':         'book.mp3',
+
+      // Home
+      'toilet':       'toilet.mp3',
+      'sink':         'sink.mp3',
+      'scissors':     'scissors.mp3',
+      'hair drier':   'hair-drier.mp3',
+
+      // Drinkware & containers
+      'bottle':       'bottle.mp3',
+      'wine glass':   'wine-glass.mp3',
+      'cup':          'wine-glass.mp3',
+      'bowl':         'wine-glass.mp3',
+
+      // Food — crunchy
+      'apple':        'apple.mp3',
+      'orange':       'apple.mp3',
+      'broccoli':     'apple.mp3',
+      'carrot':       'apple.mp3',
+
+      // Food — eating
+      'banana':       'eating.mp3',
+      'sandwich':     'eating.mp3',
+      'donut':        'eating.mp3',
+      'cake':         'eating.mp3',
+
+      // Food — hot/sizzly
+      'hot dog':      'sizzle.mp3',
+      'pizza':        'sizzle.mp3',
+
+      // Sports
+      'sports ball':  'sports-ball.mp3',
+      'surfboard':    'surfboard.mp3',
+      'tennis racket':'sports-ball.mp3',
     };
 
     const COOLDOWN_MS = 3000;
-    let lastPlayedClass = null;
+    let lastPlayedFile = null;
     let lastPlayedTime = 0;
     let currentAudio = null;
     let model = null;
     let detecting = false;
     let started = false;
 
-    // Preload all audio
+    // Preload unique audio files only
     const audioCache = {};
-    for (const [cls, file] of Object.entries(SOUND_MAP)) {
+    const uniqueFiles = [...new Set(Object.values(SOUND_MAP))];
+    for (const file of uniqueFiles) {
       const audio = new Audio('sounds/' + file);
       audio.preload = 'auto';
-      audioCache[cls] = audio;
+      audioCache[file] = audio;
     }
 
     function playSound(cls) {
+      const file = SOUND_MAP[cls];
+      if (!file) return;
+
       const now = Date.now();
-      const sameClass = cls === lastPlayedClass;
+      const sameFile = file === lastPlayedFile;
       const inCooldown = (now - lastPlayedTime) < COOLDOWN_MS;
+      if (sameFile && inCooldown) return;
 
-      if (sameClass && inCooldown) return;
-
-      const audio = audioCache[cls];
+      const audio = audioCache[file];
       if (!audio) return;
 
       if (currentAudio && !currentAudio.paused) {
@@ -174,7 +224,7 @@
       audio.currentTime = 0;
       audio.play().catch(() => {});
       currentAudio = audio;
-      lastPlayedClass = cls;
+      lastPlayedFile = file;
       lastPlayedTime = now;
     }
 
