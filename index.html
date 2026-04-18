@@ -185,7 +185,7 @@
       'tv':            '📺 A TV! What\'s on?',
       'laptop':        '💻 A laptop! Clickety clack!',
       'mouse':         '🖱️ A computer mouse!',
-      'remote':        '📡 A remote control!',
+      'remote':        '🎮 A remote control!',
       'keyboard':      '⌨️ A keyboard! Type type type!',
       'cell phone':    '📱 A phone! Is it ringing?',
       'microwave':     '📡 A microwave! Ding!',
@@ -374,6 +374,8 @@
             }
 
             if (SOUND_MAP[top.class]) {
+              clearTimeout(stopTimer);
+              stopTimer = null;
               playSound(top.class);
             }
           } else {
