@@ -227,6 +227,7 @@
       source.buffer = bufferCache[file];
       source.connect(audioCtx.destination);
       source.start(0);
+      source.stop(audioCtx.currentTime + 3);
       currentSource = source;
       lastPlayedFile = file;
       lastPlayedTime = now;
