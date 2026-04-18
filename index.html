@@ -243,6 +243,14 @@
       color: #666; font-size: 13px; cursor: pointer; margin-bottom: 4px;
     }
 
+    /* ── Debug overlay ──────────────────────────────────────── */
+    #debug-overlay {
+      position: fixed; bottom: 64px; left: 8px; right: 8px;
+      background: rgba(0,0,0,0.78); color: #0f0;
+      font-family: monospace; font-size: 11px; padding: 8px 10px;
+      border-radius: 8px; z-index: 50; pointer-events: none;
+      line-height: 1.7; display: none;
+    }
     #error {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
       color: #fff; font-family: -apple-system, sans-serif;
@@ -376,8 +384,16 @@
         <button class="vl-save-btn" data-save="person">👤 Save as Person</button>
       </div>
       <button id="vl-reset" class="vl-reset-btn">Reset All to Defaults</button>
+      <button id="vl-debug-toggle" class="vl-reset-btn" style="margin-top:6px;color:#0f0;border-color:#0a3a0a">🔬 Debug Overlay: OFF</button>
       <button id="vl-close" class="modal-close-btn">Close Voice Lab</button>
     </div>
+  </div>
+
+  <!-- Debug overlay (toggle: ?debug=1 or Voice Lab debug button) -->
+  <div id="debug-overlay">
+    <div id="dbg-active"></div>
+    <div id="dbg-top3"></div>
+    <div id="dbg-hold"></div>
   </div>
 
   <div id="tap-overlay">
@@ -885,28 +901,79 @@
       lastPlayedFile = file; lastPlayedTime = now;
     }
 
-    // ── Detection ─────────────────────────────────────────────────────────────
-    const PRIORITY_CLASSES      = ['dog','cat','bird','horse','cow','sheep','elephant','bear','zebra','giraffe','person'];
-    const VOTE_WINDOW            = 7;
-    const VOTE_THRESH            = 4;
-    const PRIORITY_THRESH        = 3;
-    const MIN_CONF               = 0.38;
-    const PRIORITY_CONF          = 0.40;
-    const PRIORITY_ABSENT_CONF   = 0.25;
-    const PRIORITY_HOLD_MS       = 3000;
-    const PRIORITY_ABSENT_FRAMES = 5;
+    // ── Detection — tier system ───────────────────────────────────────────────
+    // Edit class lists here to move objects between tiers during testing.
 
-    let voteBuffer        = [];
-    let activeClass       = null;
-    let activeBbox        = null;
-    let activeQuote       = null;
-    let activeLabel       = null;
-    let activeLockedAt    = 0;
-    let priorityAbsentCount = 0;
+    const TIER_1_SUBJECTS = [
+      'person','dog','cat','bird','horse','cow','sheep',
+      'elephant','bear','zebra','giraffe',
+    ];
+
+    const TIER_2_INTENTIONAL = [
+      // food
+      'pizza','hot dog','donut','cake','sandwich','apple','banana','orange','broccoli','carrot',
+      // electronics / appliances
+      'cell phone','laptop','tv','microwave','toaster','refrigerator','oven',
+      // sports / toys
+      'sports ball','baseball bat','baseball glove','tennis racket','skateboard','surfboard',
+      'frisbee','kite','skis','snowboard',
+      // kid-relevant
+      'teddy bear','remote',
+      // vehicles
+      'car','truck','motorcycle','bicycle','airplane','train','bus','boat',
+      // street
+      'traffic light','stop sign','fire hydrant',
+      // funny for kids
+      'toilet',
+    ];
+
+    const TIER_3_AMBIENT = [
+      'cup','bowl','bottle','wine glass','fork','knife','spoon',
+      'vase','book','clock','scissors','backpack','handbag',
+      'suitcase','umbrella','tie','chair','couch','bed',
+      'dining table','potted plant','sink','keyboard','mouse',
+      'hair drier','toothbrush','bench',
+    ];
+
+    function getTier(cls) {
+      if (TIER_1_SUBJECTS.includes(cls))    return 1;
+      if (TIER_2_INTENTIONAL.includes(cls)) return 2;
+      if (TIER_3_AMBIENT.includes(cls))     return 3;
+      return 2; // default for unlisted classes
+    }
+
+    const TIER_CONFIG = {
+      1: { minConf: 0.40, voteWindow: 7,  voteThresh: 3,  centerWeight: 1.0, holdTimeMs: 3000 },
+      2: { minConf: 0.55, voteWindow: 10, voteThresh: 6,  centerWeight: 1.5, holdTimeMs: 2000 },
+      3: { minConf: 0.65, voteWindow: 15, voteThresh: 11, centerWeight: 2.0, holdTimeMs: 1500 },
+    };
+
+    const MAX_VOTE_WINDOW     = 15;  // longest tier window — buffer length
+    const ABSENT_CONF         = 0.25; // min conf to count a class as "still present"
+    const ABSENT_FRAMES_LIMIT = 5;   // frames absent before Tier-1 lock can release
+
+    let voteBuffer          = []; // array of arrays: [{cls,bbox,conf,weightedScore,tier}] per frame
+    let activeClass         = null;
+    let activeBbox          = null;
+    let activeQuote         = null;
+    let activeLabel         = null;
+    let activeTier          = 0;
+    let activeLockedAt      = 0;
+    let activeAbsentFrames  = 0;
 
     let cocoModel = null, mnModel = null;
     let detecting = false, detectBusy = false, started = false;
     let mnFrameCount = 0;
+
+    // Debug overlay: enabled via ?debug=1 URL param or Voice Lab toggle
+    let debugMode = new URLSearchParams(location.search).get('debug') === '1'
+                 || localStorage.getItem('debugMode') === 'true';
+    function setDebugMode(on) {
+      debugMode = on;
+      localStorage.setItem('debugMode', on);
+      document.getElementById('debug-overlay').style.display = on ? 'block' : 'none';
+    }
+    if (debugMode) document.getElementById('debug-overlay').style.display = 'block';
 
     function cropToBbox(bbox) {
       if (!bbox || !video.videoWidth) return false;
@@ -947,80 +1014,174 @@
         detectBusy = true;
         try {
           const preds = await cocoModel.detect(video);
+          const vw = video.videoWidth  || 320;
+          const vh = video.videoHeight || 240;
+          const maxDist = Math.sqrt((vw / 2) ** 2 + (vh / 2) ** 2) || 1;
 
-          const priorityPred = preds.filter(p => PRIORITY_CLASSES.includes(p.class) && p.score >= PRIORITY_CONF).sort((a,b) => b.score-a.score)[0] || null;
-          const fallbackPred = !priorityPred ? (preds.filter(p => p.score >= MIN_CONF)[0] || null) : null;
-          const best = priorityPred || fallbackPred;
+          // 1. Filter by tier minConf; compute centerness-weighted score
+          const frameDetections = preds.map(p => {
+            const tier = getTier(p.class);
+            if (p.score < TIER_CONFIG[tier].minConf) return null;
+            const [bx, by, bw, bh] = p.bbox;
+            const cx = bx + bw / 2, cy = by + bh / 2;
+            const centerness = Math.max(0, 1 - Math.sqrt((cx - vw/2)**2 + (cy - vh/2)**2) / maxDist);
+            const cw = TIER_CONFIG[tier].centerWeight;
+            // centerWeight=1 → pure conf; centerWeight>1 → penalise off-centre objects
+            const weightedScore = p.score * Math.pow(Math.max(0.001, centerness), cw - 1);
+            return { cls: p.class, bbox: p.bbox, conf: p.score, centerness, weightedScore, tier };
+          }).filter(Boolean);
 
-          const isPriorityActive = activeClass && PRIORITY_CLASSES.includes(activeClass);
-          if (isPriorityActive) {
-            const stillSeen = preds.some(p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF);
-            priorityAbsentCount = stillSeen ? 0 : priorityAbsentCount + 1;
-          } else { priorityAbsentCount = 0; }
+          // 2. Rolling 15-frame buffer (one entry per frame = array of qualifying dets)
+          voteBuffer.push(frameDetections);
+          if (voteBuffer.length > MAX_VOTE_WINDOW) voteBuffer.shift();
 
-          const priorityLockExpired = Date.now() - activeLockedAt >= PRIORITY_HOLD_MS;
-          const prioritySubjectGone = priorityAbsentCount >= PRIORITY_ABSENT_FRAMES;
-          const canSwitch = !isPriorityActive || (priorityLockExpired && prioritySubjectGone);
+          // 3. Track how many frames the active class has been absent
+          if (activeClass) {
+            const stillSeen = frameDetections.some(d => d.cls === activeClass && d.conf >= ABSENT_CONF);
+            activeAbsentFrames = stillSeen ? 0 : activeAbsentFrames + 1;
+          } else {
+            activeAbsentFrames = 0;
+          }
 
-          voteBuffer.push(best ? { cls: best.class, bbox: best.bbox } : null);
-          if (voteBuffer.length > VOTE_WINDOW) voteBuffer.shift();
-          const counts = {};
-          for (const v of voteBuffer) if (v) counts[v.cls] = (counts[v.cls]||0) + 1;
-          const winner = Object.keys(counts).sort((a,b) => counts[b]-counts[a])[0] || null;
-          const threshold = (winner && PRIORITY_CLASSES.includes(winner)) ? PRIORITY_THRESH : VOTE_THRESH;
-
-          if (winner && counts[winner] >= threshold && (winner === activeClass || canSwitch)) {
-            const changed = winner !== activeClass;
-            activeClass = winner;
-            if (changed) {
-              activeLockedAt = Date.now();
-              priorityAbsentCount = 0;
-              activeQuote = pickQuote(winner);
-              activeLabel = null;
-              checkDiscovery(winner);
+          // 4. Build per-class stats using tier-specific vote window
+          const classStats = {};
+          for (const frame of voteBuffer) {
+            for (const det of frame) {
+              if (!classStats[det.cls]) {
+                classStats[det.cls] = { tier: det.tier, votes: 0, qualified: false,
+                                        recentBbox: null, recentConf: 0, peakScore: 0 };
+              }
+              // Always take the most recent bbox (later frames overwrite)
+              classStats[det.cls].recentBbox = det.bbox;
+              classStats[det.cls].recentConf = det.conf;
+              classStats[det.cls].peakScore  = Math.max(classStats[det.cls].peakScore, det.weightedScore);
             }
-            const fresh = [...voteBuffer].reverse().find(v => v && v.cls === winner);
-            if (fresh) activeBbox = fresh.bbox;
+          }
+          for (const cls of Object.keys(classStats)) {
+            const cfg = TIER_CONFIG[classStats[cls].tier];
+            const win = voteBuffer.slice(-cfg.voteWindow);
+            classStats[cls].votes     = win.filter(f => f.some(d => d.cls === cls)).length;
+            classStats[cls].qualified = classStats[cls].votes >= cfg.voteThresh;
+          }
 
+          // 5. Find best qualified candidate by tier priority (T1 > T2 > T3)
+          let ideal = null;
+          for (let t = 1; t <= 3; t++) {
+            const cands = Object.entries(classStats)
+              .filter(([, s]) => s.tier === t && s.qualified)
+              .sort(([, a], [, b]) => b.peakScore - a.peakScore);
+            if (cands.length) {
+              ideal = { cls: cands[0][0], tier: t, bbox: classStats[cands[0][0]].recentBbox };
+              break;
+            }
+          }
+
+          // 6. Override rules — can the ideal candidate take over from active?
+          const holdExpired = activeClass &&
+            (Date.now() - activeLockedAt >= TIER_CONFIG[activeTier].holdTimeMs);
+          const subjectGone = activeAbsentFrames >= ABSENT_FRAMES_LIMIT;
+
+          function canOverride(candidateTier) {
+            if (!activeClass) return true;
+            if (activeTier === 1) return holdExpired && subjectGone; // strict T1 lock
+            if (activeTier === 2) return candidateTier === 1 || holdExpired;
+            if (activeTier === 3) return candidateTier <= 2 || holdExpired;
+            return holdExpired;
+          }
+
+          // 7. Decide next state
+          let nextClass = null, nextTier = 0, nextBbox = null;
+
+          if (ideal && ideal.cls === activeClass) {
+            // Same class still qualifying — keep, update bbox
+            nextClass = activeClass;
+            nextTier  = activeTier;
+            nextBbox  = ideal.bbox || activeBbox;
+          } else if (ideal && canOverride(ideal.tier)) {
+            // Different class wins and is allowed to take over
+            nextClass = ideal.cls;
+            nextTier  = ideal.tier;
+            nextBbox  = ideal.bbox;
+          } else if (activeClass) {
+            // Hold active class (stickiness window not expired, or ideal blocked)
+            const freshBbox = classStats[activeClass]?.recentBbox;
+            nextClass = activeClass;
+            nextTier  = activeTier;
+            nextBbox  = freshBbox || activeBbox;
+            // If nothing at all qualifies AND hold expired AND gone → clear
+            if (!ideal && holdExpired && subjectGone && !isPlaying) {
+              nextClass = null; nextTier = 0; nextBbox = null;
+            }
+          }
+          // else: no ideal, no active → nextClass stays null
+
+          // 8. Apply state change
+          if (nextClass !== activeClass) {
+            activeClass        = nextClass;
+            activeTier         = nextTier;
+            activeBbox         = nextBbox;
+            activeAbsentFrames = 0;
+            if (nextClass) {
+              activeLockedAt = Date.now();
+              activeQuote    = pickQuote(nextClass);
+              activeLabel    = null;
+              checkDiscovery(nextClass);
+            } else {
+              if (!isPlaying) { activeQuote = null; activeLabel = null; }
+              showBubble(null, null, null);
+              drawGlow(null);
+            }
+          } else if (nextClass) {
+            activeBbox = nextBbox || activeBbox;
+          }
+
+          // 9. MobileNet secondary classifier (every 3rd frame, active class only)
+          if (activeClass) {
             mnFrameCount++;
             if (mnModel && activeBbox && mnFrameCount % 3 === 0) {
               if (cropToBbox(activeBbox)) {
                 try {
                   const results = await mnModel.classify(cropCanvas, 3);
                   if (results.length > 0 && results[0].probability >= 0.25) {
-                    const mnCls = mobilenetCategory(results[0].className);
+                    const mnCls  = mobilenetCategory(results[0].className);
                     const pretty = prettyLabel(results[0].className);
                     if (mnCls === activeClass || mnCls === null) {
                       activeLabel = pretty;
-                    } else if (mnCls && results[0].probability >= 0.55 && canSwitch) {
-                      activeClass = mnCls; activeLabel = pretty;
-                      activeQuote = pickQuote(mnCls); activeLockedAt = Date.now();
+                    } else if (mnCls && results[0].probability >= 0.55 && canOverride(getTier(mnCls))) {
+                      activeClass    = mnCls;
+                      activeTier     = getTier(mnCls);
+                      activeLabel    = pretty;
+                      activeQuote    = pickQuote(mnCls);
+                      activeLockedAt = Date.now();
                     }
                   }
                 } catch {}
               }
             }
 
-            const emoji = LABEL_MAP[activeClass] || '🐾';
+            const emoji        = LABEL_MAP[activeClass] || '🐾';
             const displayLabel = activeLabel ? (emoji + ' ' + activeLabel) : null;
             drawGlow(activeBbox);
             showBubble(displayLabel, activeQuote, activeBbox);
             if (SOUND_MAP[activeClass]) playSound(activeClass);
-
-          } else if (activeClass && !canSwitch) {
-            const freshPriority = preds.find(p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF);
-            if (freshPriority) activeBbox = freshPriority.bbox;
-            const emoji = LABEL_MAP[activeClass] || '🐾';
-            const displayLabel = activeLabel ? (emoji + ' ' + activeLabel) : null;
-            drawGlow(activeBbox);
-            showBubble(displayLabel, activeQuote, activeBbox);
-          } else {
-            drawGlow(best?.bbox || null);
-            if (!isPlaying) {
-              activeClass = null; activeQuote = null; activeLabel = null;
-              priorityAbsentCount = 0; showBubble(null, null, null);
-            }
           }
+
+          // 10. Debug overlay
+          if (debugMode) {
+            const top3 = Object.entries(classStats)
+              .sort(([, a], [, b]) => b.votes - a.votes)
+              .slice(0, 3);
+            const holdRemain = activeClass
+              ? Math.max(0, ((TIER_CONFIG[activeTier]?.holdTimeMs || 0) - (Date.now() - activeLockedAt)) / 1000).toFixed(1)
+              : '–';
+            document.getElementById('dbg-active').textContent =
+              `▶ ${activeClass || '(none)'} T${activeTier || '–'}  absent:${activeAbsentFrames}  hold:${holdRemain}s`;
+            document.getElementById('dbg-top3').textContent =
+              top3.map(([cls, s]) =>
+                `${cls}:${s.votes}/${TIER_CONFIG[s.tier].voteThresh}(T${s.tier})`
+              ).join('   ');
+          }
+
         } catch {}
         detectBusy = false;
       }
@@ -1253,6 +1414,16 @@
     });
 
     vlCloseBtn.addEventListener('click', closeVoiceLab);
+
+    const vlDebugBtn = document.getElementById('vl-debug-toggle');
+    function updateDebugBtn() {
+      vlDebugBtn.textContent = `🔬 Debug Overlay: ${debugMode ? 'ON' : 'OFF'}`;
+    }
+    updateDebugBtn();
+    vlDebugBtn.addEventListener('click', () => {
+      setDebugMode(!debugMode);
+      updateDebugBtn();
+    });
 
     // Close voice lab on backdrop tap
     voiceLabEl.addEventListener('click', (e) => {
