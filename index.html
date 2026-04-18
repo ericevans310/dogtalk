@@ -35,6 +35,21 @@
       z-index: 10;
     }
 
+    #detection {
+      position: fixed;
+      bottom: 40px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      z-index: 10;
+      letter-spacing: 0.5px;
+    }
+
     #error {
       position: fixed;
       top: 50%;
@@ -52,13 +67,21 @@
 </head>
 <body>
   <video id="video" autoplay playsinline muted></video>
-  <div id="status"></div>
+  <div id="status">Starting...</div>
+  <div id="detection"></div>
   <div id="error"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 
   <script>
     const video = document.getElementById('video');
     const status = document.getElementById('status');
+    const detection = document.getElementById('detection');
     const error = document.getElementById('error');
+
+    let model = null;
+    let detecting = false;
 
     async function startCamera() {
       try {
@@ -68,7 +91,8 @@
         });
         video.srcObject = stream;
         video.addEventListener('loadedmetadata', () => {
-          status.textContent = 'Camera active';
+          status.textContent = 'Camera active — loading model...';
+          loadModel();
         });
       } catch (err) {
         error.style.display = 'block';
@@ -80,6 +104,36 @@
           error.textContent = 'Could not start camera: ' + err.message;
         }
       }
+    }
+
+    async function loadModel() {
+      try {
+        model = await cocoSsd.load();
+        status.textContent = 'Camera active';
+        detecting = true;
+        detectLoop();
+      } catch (err) {
+        status.textContent = 'Model failed to load';
+      }
+    }
+
+    async function detectLoop() {
+      if (!detecting || !model) return;
+
+      try {
+        const predictions = await model.detect(video);
+        if (predictions.length > 0) {
+          const top = predictions[0];
+          const confidence = Math.round(top.score * 100);
+          detection.textContent = top.class + ' (' + confidence + '%)';
+        } else {
+          detection.textContent = '';
+        }
+      } catch (err) {
+        // video not ready yet, skip frame
+      }
+
+      requestAnimationFrame(detectLoop);
     }
 
     startCamera();
