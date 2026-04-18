@@ -118,76 +118,153 @@
     const errorEl = document.getElementById('error');
     const tapOverlay = document.getElementById('tap-overlay');
 
-    // COCO-SSD class → sound filename in /sounds/
-    const SOUND_MAP = {
-      // Animals
-      'person':       'person.mp3',
-      'bird':         'bird.mp3',
-      'cat':          'cat.mp3',
-      'dog':          'dog.mp3',
-      'horse':        'horse.mp3',
-      'sheep':        'sheep.mp3',
-      'cow':          'cow.mp3',
-      'elephant':     'elephant.mp3',
-      'bear':         'bear.mp3',
-
-      // Vehicles
-      'bicycle':      'bicycle.mp3',
-      'car':          'car.mp3',
-      'motorcycle':   'motorcycle.mp3',
-      'airplane':     'airplane.mp3',
-      'bus':          'bus.mp3',
-      'train':        'train.mp3',
-      'truck':        'truck.mp3',
-      'boat':         'boat.mp3',
-
-      // Electronics & furniture
-      'tv':           'tv.mp3',
-      'laptop':       'laptop.mp3',
-      'mouse':        'mouse.mp3',
-      'remote':       'remote.mp3',
-      'keyboard':     'keyboard.mp3',
-      'cell phone':   'cell-phone.mp3',
-      'microwave':    'microwave.mp3',
-      'clock':        'clock.mp3',
-      'bed':          'bed.mp3',
-      'book':         'book.mp3',
-
-      // Home
-      'toilet':       'toilet.mp3',
-      'sink':         'sink.mp3',
-      'scissors':     'scissors.mp3',
-      'hair drier':   'hair-drier.mp3',
-
-      // Drinkware & containers
-      'bottle':       'bottle.mp3',
-      'wine glass':   'wine-glass.mp3',
-      'cup':          'wine-glass.mp3',
-      'bowl':         'wine-glass.mp3',
-
-      // Food — crunchy
-      'apple':        'apple.mp3',
-      'orange':       'apple.mp3',
-      'broccoli':     'apple.mp3',
-      'carrot':       'apple.mp3',
-
-      // Food — eating
-      'banana':       'eating.mp3',
-      'sandwich':     'eating.mp3',
-      'donut':        'eating.mp3',
-      'cake':         'eating.mp3',
-
-      // Food — hot/sizzly
-      'hot dog':      'sizzle.mp3',
-      'pizza':        'sizzle.mp3',
-
-      // Sports
-      'sports ball':  'sports-ball.mp3',
-      'surfboard':    'surfboard.mp3',
-      'tennis racket':'sports-ball.mp3',
+    // COCO-SSD class → fun label shown on screen
+    const LABEL_MAP = {
+      'person':        '👤 A human! Hello there!',
+      'bicycle':       '🚲 A bicycle! Ding ding!',
+      'car':           '🚗 Vroom! A car!',
+      'motorcycle':    '🏍️ A motorcycle! So loud!',
+      'airplane':      '✈️ An airplane way up high!',
+      'bus':           '🚌 The bus is here!',
+      'train':         '🚂 Choo choo! A train!',
+      'truck':         '🚚 A big truck rumbling by!',
+      'boat':          '⛵ A boat on the water!',
+      'traffic light': '🚦 A traffic light!',
+      'fire hydrant':  '🔴 A fire hydrant!',
+      'stop sign':     '🛑 Stop right there!',
+      'parking meter': '🅿️ A parking meter!',
+      'bench':         '🪑 A bench to sit on!',
+      'bird':          '🐦 A bird! Tweet tweet!',
+      'cat':           '🐈 A cat! My nemesis!',
+      'dog':           '🐕 Another dog! Woof woof!',
+      'horse':         '🐎 A horse! So majestic!',
+      'sheep':         '🐑 A fluffy sheep!',
+      'cow':           '🐄 A cow! Moo!',
+      'elephant':      '🐘 Whoa, an elephant!',
+      'bear':          '🐻 A bear! Watch out!',
+      'zebra':         '🦓 A zebra! Cool stripes!',
+      'giraffe':       '🦒 A giraffe! So tall!',
+      'backpack':      '🎒 A backpack full of stuff!',
+      'umbrella':      '☂️ An umbrella for rainy days!',
+      'handbag':       '👜 A fancy handbag!',
+      'tie':           '👔 A fancy tie!',
+      'suitcase':      '🧳 Going somewhere?',
+      'frisbee':       '🥏 A frisbee! Fetch!',
+      'skis':          '⛷️ Skis! Hit the slopes!',
+      'snowboard':     '🏂 A snowboard! Shred it!',
+      'sports ball':   '⚽ A ball! Let\'s play!',
+      'kite':          '🪁 A kite flying high!',
+      'baseball bat':  '⚾ A baseball bat!',
+      'baseball glove':'🧤 A baseball glove!',
+      'skateboard':    '🛹 A skateboard! Rad!',
+      'surfboard':     '🏄 A surfboard! Hang ten!',
+      'tennis racket': '🎾 A tennis racket!',
+      'bottle':        '🍶 A bottle!',
+      'wine glass':    '🍷 A wine glass! Clink!',
+      'cup':           '☕ A cup! Hot stuff!',
+      'fork':          '🍴 A fork!',
+      'knife':         '🔪 A knife! Careful!',
+      'spoon':         '🥄 A spoon!',
+      'bowl':          '🥣 A bowl of something yummy!',
+      'banana':        '🍌 A banana! Nom nom!',
+      'apple':         '🍎 An apple a day!',
+      'sandwich':      '🥪 A sandwich! Yummy!',
+      'orange':        '🍊 A juicy orange!',
+      'broccoli':      '🥦 Broccoli! Eat your greens!',
+      'carrot':        '🥕 A crunchy carrot!',
+      'hot dog':       '🌭 A hot dog! Sizzling!',
+      'pizza':         '🍕 PIZZA! My favorite!',
+      'donut':         '🍩 A donut! So sweet!',
+      'cake':          '🎂 Cake! Is it a birthday?',
+      'chair':         '🪑 A chair to sit on!',
+      'couch':         '🛋️ A cozy couch!',
+      'potted plant':  '🌿 A plant! Growing nicely!',
+      'bed':           '🛏️ A bed! Naptime!',
+      'dining table':  '🍽️ A dining table!',
+      'toilet':        '🚽 The toilet! Relief!',
+      'tv':            '📺 A TV! What\'s on?',
+      'laptop':        '💻 A laptop! Clickety clack!',
+      'mouse':         '🖱️ A computer mouse!',
+      'remote':        '📡 A remote control!',
+      'keyboard':      '⌨️ A keyboard! Type type type!',
+      'cell phone':    '📱 A phone! Is it ringing?',
+      'microwave':     '📡 A microwave! Ding!',
+      'oven':          '🍳 An oven! Something cooking!',
+      'toaster':       '🍞 A toaster! Pop!',
+      'sink':          '🚿 A sink! Running water!',
+      'refrigerator':  '🧊 A fridge full of food!',
+      'book':          '📚 A book! So educational!',
+      'clock':         '⏰ A clock! Tick tock!',
+      'vase':          '🏺 A fancy vase!',
+      'scissors':      '✂️ Scissors! Snip snip!',
+      'teddy bear':    '🧸 A teddy bear! How cute!',
+      'hair drier':    '💨 A hair dryer! Breezy!',
+      'toothbrush':    '🪥 A toothbrush! Brush brush!',
     };
 
-    const COOLDOWN_MS = 500;
+    // COCO-SSD class → sound filename (only classes with sounds >1s)
+    const SOUND_MAP = {
+      // Animals
+      'person':        'person.mp3',
+      'bird':          'bird.mp3',
+      'cat':           'cat.mp3',
+      'dog':           'dog.mp3',
+      'horse':         'horse.mp3',
+      'sheep':         'sheep.mp3',
+      'cow':           'cow.mp3',
+      'elephant':      'elephant.mp3',
+      'bear':          'bear.mp3',
+
+      // Vehicles
+      'bicycle':       'bicycle.mp3',
+      'car':           'car.mp3',
+      'motorcycle':    'motorcycle.mp3',
+      'airplane':      'airplane.mp3',
+      'bus':           'bus.mp3',
+      'train':         'train.mp3',
+      'truck':         'truck.mp3',
+      'boat':          'boat.mp3',
+
+      // Electronics
+      'tv':            'tv.mp3',
+      'laptop':        'laptop.mp3',
+      'keyboard':      'keyboard.mp3',
+      'cell phone':    'cell-phone.mp3',
+      'microwave':     'microwave.mp3',
+      'clock':         'clock.mp3',
+      'bed':           'bed.mp3',
+
+      // Home
+      'toilet':        'toilet.mp3',
+      'sink':          'sink.mp3',
+      'hair drier':    'hair-drier.mp3',
+
+      // Drinkware & containers
+      'bottle':        'bottle.mp3',
+      'wine glass':    'wine-glass.mp3',
+      'cup':           'bottle.mp3',
+
+      // Food — crunchy
+      'apple':         'apple.mp3',
+      'orange':        'apple.mp3',
+      'broccoli':      'apple.mp3',
+      'carrot':        'apple.mp3',
+
+      // Food — eating
+      'banana':        'eating.mp3',
+      'sandwich':      'eating.mp3',
+      'donut':         'eating.mp3',
+      'cake':          'eating.mp3',
+
+      // Food — sizzly
+      'hot dog':       'sizzle.mp3',
+      'pizza':         'sizzle.mp3',
+
+      // Sports
+      'surfboard':     'surfboard.mp3',
+    };
+
+    const COOLDOWN_MS = 1000;
     let lastPlayedFile = null;
     let lastPlayedTime = 0;
     let currentSource = null;
@@ -286,7 +363,8 @@
           if (predictions.length > 0) {
             const top = predictions[0];
             const confidence = Math.round(top.score * 100);
-            detectionEl.textContent = top.class + ' (' + confidence + '%)';
+            const label = LABEL_MAP[top.class] || top.class;
+            detectionEl.textContent = label + '  ' + confidence + '%';
 
             if (top.class !== lastDetectedClass) {
               // Class changed — stop audio after 1 second
