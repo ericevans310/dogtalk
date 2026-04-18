@@ -288,6 +288,13 @@
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
+
+      // iOS Safari requires audio to be triggered directly inside a user gesture.
+      // Play+pause every sound file now to unlock them all.
+      for (const audio of Object.values(audioCache)) {
+        audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+      }
+
       startCamera();
     });
   </script>
