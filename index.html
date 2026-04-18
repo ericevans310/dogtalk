@@ -268,8 +268,7 @@
     let lastPlayedFile = null;
     let lastPlayedTime = 0;
     let currentSource = null;
-    let lastDetectedClass = null;
-    let stopTimer = null;
+    let isPlaying = false;
     let model = null;
     let detecting = false;
     let detectBusy = false;
@@ -293,27 +292,21 @@
       }
     }
 
-    function stopCurrent() {
-      if (currentSource) {
-        try { currentSource.stop(); } catch(e) {}
-        currentSource = null;
-      }
-    }
-
     function playSound(cls) {
       const file = SOUND_MAP[cls];
       if (!file || !audioCtx || !bufferCache[file]) return;
+      if (isPlaying) return;
 
       const now = Date.now();
       if (file === lastPlayedFile && (now - lastPlayedTime) < COOLDOWN_MS) return;
 
-      stopCurrent();
-
       const source = audioCtx.createBufferSource();
       source.buffer = bufferCache[file];
       source.connect(audioCtx.destination);
+      source.onended = () => { isPlaying = false; currentSource = null; };
       source.start(0);
       source.stop(audioCtx.currentTime + 3);
+      isPlaying = true;
       currentSource = source;
       lastPlayedFile = file;
       lastPlayedTime = now;
@@ -366,25 +359,11 @@
             const label = LABEL_MAP[top.class] || top.class;
             detectionEl.textContent = label + '  ' + confidence + '%';
 
-            if (top.class !== lastDetectedClass) {
-              // Class changed — stop audio after 1 second
-              clearTimeout(stopTimer);
-              stopTimer = setTimeout(stopCurrent, 1000);
-              lastDetectedClass = top.class;
-            }
-
             if (SOUND_MAP[top.class]) {
-              clearTimeout(stopTimer);
-              stopTimer = null;
               playSound(top.class);
             }
           } else {
             detectionEl.textContent = '';
-            if (lastDetectedClass !== null) {
-              clearTimeout(stopTimer);
-              stopTimer = setTimeout(stopCurrent, 1000);
-              lastDetectedClass = null;
-            }
           }
         } catch (err) {
           // video not ready yet, skip frame
