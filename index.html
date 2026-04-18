@@ -303,7 +303,7 @@
       const source = audioCtx.createBufferSource();
       source.buffer = bufferCache[file];
       source.connect(audioCtx.destination);
-      source.onended = () => { isPlaying = false; currentSource = null; };
+      source.onended = () => { isPlaying = false; currentSource = null; lastPlayedTime = Date.now(); };
       source.start(0);
       source.stop(audioCtx.currentTime + 3);
       isPlaying = true;
