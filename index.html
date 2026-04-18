@@ -509,15 +509,24 @@
     }
 
     // ── Detection ─────────────────────────────────────────────────────────────
-    const VOTE_WINDOW = 7;
-    const VOTE_THRESH = 4;
-    const MIN_CONF    = 0.38;
+    const PRIORITY_CLASSES = ['dog','cat','bird','horse','cow','sheep','elephant','bear','zebra','giraffe','person'];
 
-    let voteBuffer   = [];
-    let activeClass  = null;
-    let activeBbox   = null;
-    let activeQuote  = null;
-    let activeLabel  = null;  // specific MobileNet label (e.g. "Golden Retriever")
+    const VOTE_WINDOW       = 7;
+    const VOTE_THRESH       = 4;   // votes needed for non-priority classes
+    const PRIORITY_THRESH   = 3;   // votes needed for priority classes (faster lock-on)
+    const MIN_CONF          = 0.38;
+    const PRIORITY_CONF     = 0.40; // confidence floor to count a priority detection
+    const PRIORITY_ABSENT_CONF = 0.25; // minimum to count as "still present"
+    const PRIORITY_HOLD_MS  = 3000; // ms to hold a priority class before allowing replacement
+    const PRIORITY_ABSENT_FRAMES = 5; // frames of absence before releasing priority lock
+
+    let voteBuffer     = [];
+    let activeClass    = null;
+    let activeBbox     = null;
+    let activeQuote    = null;
+    let activeLabel    = null;  // specific MobileNet label (e.g. "Golden Retriever")
+    let activeLockedAt = 0;     // timestamp when current priority class was locked
+    let priorityAbsentCount = 0; // consecutive frames where priority subject not seen
 
     let cocoModel = null, mnModel = null;
     let detecting = false, detectBusy = false, started = false;
@@ -570,7 +579,34 @@
         detectBusy = true;
         try {
           const preds = await cocoModel.detect(video);
-          const best  = preds.filter(p => p.score >= MIN_CONF)[0] || null;
+
+          // ── Priority selection: prefer animals/person over objects ────────
+          // Find highest-confidence priority detection first
+          const priorityPred = preds
+            .filter(p => PRIORITY_CLASSES.includes(p.class) && p.score >= PRIORITY_CONF)
+            .sort((a, b) => b.score - a.score)[0] || null;
+          // Fall back to best non-priority only if no priority found
+          const fallbackPred = !priorityPred
+            ? (preds.filter(p => p.score >= MIN_CONF)[0] || null)
+            : null;
+          const best = priorityPred || fallbackPred;
+
+          // ── Track whether active priority subject is still visible ────────
+          const isPriorityActive = activeClass && PRIORITY_CLASSES.includes(activeClass);
+          if (isPriorityActive) {
+            const stillSeen = preds.some(
+              p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF
+            );
+            priorityAbsentCount = stillSeen ? 0 : priorityAbsentCount + 1;
+          } else {
+            priorityAbsentCount = 0;
+          }
+
+          // Release priority lock only after sustained absence
+          const priorityLockExpired = Date.now() - activeLockedAt >= PRIORITY_HOLD_MS;
+          const prioritySubjectGone = priorityAbsentCount >= PRIORITY_ABSENT_FRAMES;
+          const canSwitch = !isPriorityActive
+            || (priorityLockExpired && prioritySubjectGone);
 
           // ── Rolling vote window ───────────────────────────────────────────
           voteBuffer.push(best ? { cls: best.class, bbox: best.bbox } : null);
@@ -579,18 +615,22 @@
           const counts = {};
           for (const v of voteBuffer) if (v) counts[v.cls] = (counts[v.cls] || 0) + 1;
           const winner = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
+          const threshold = (winner && PRIORITY_CLASSES.includes(winner))
+            ? PRIORITY_THRESH : VOTE_THRESH;
 
-          if (winner && counts[winner] >= VOTE_THRESH) {
+          if (winner && counts[winner] >= threshold && (winner === activeClass || canSwitch)) {
             const changed = winner !== activeClass;
             activeClass = winner;
 
+            if (changed) {
+              activeLockedAt = Date.now();
+              priorityAbsentCount = 0;
+              activeQuote = pickQuote(winner);
+              activeLabel = null;
+            }
+
             const fresh = [...voteBuffer].reverse().find(v => v && v.cls === winner);
             if (fresh) activeBbox = fresh.bbox;
-
-            if (changed) {
-              activeQuote = pickQuote(winner);
-              activeLabel = null; // reset specific label on class change
-            }
 
             // ── MobileNet crop classification (every 3rd frame) ───────────
             mnFrameCount++;
@@ -601,15 +641,15 @@
                   if (results.length > 0 && results[0].probability >= 0.25) {
                     const mnCls  = mobilenetCategory(results[0].className);
                     const pretty = prettyLabel(results[0].className);
-                    // Only update specific label if MobileNet agrees with COCO category
                     if (mnCls === activeClass || mnCls === null) {
                       activeLabel = pretty;
-                    } else if (mnCls) {
-                      // MobileNet disagrees — trust it only if high confidence
-                      if (results[0].probability >= 0.55) {
+                    } else if (mnCls && results[0].probability >= 0.55) {
+                      // MobileNet strongly disagrees — only override if canSwitch
+                      if (canSwitch) {
                         activeClass = mnCls;
                         activeLabel = pretty;
                         activeQuote = pickQuote(mnCls);
+                        activeLockedAt = Date.now();
                       }
                     }
                   }
@@ -623,10 +663,23 @@
             showBubble(displayLabel, activeQuote, activeBbox);
             if (SOUND_MAP[activeClass]) playSound(activeClass);
 
+          } else if (activeClass && !canSwitch) {
+            // Holding priority lock — keep showing current subject, just refresh bbox
+            const freshPriority = preds.find(
+              p => p.class === activeClass && p.score >= PRIORITY_ABSENT_CONF
+            );
+            if (freshPriority) activeBbox = freshPriority.bbox;
+            const emoji = LABEL_MAP[activeClass] || '🐾';
+            const displayLabel = activeLabel ? (emoji + ' ' + activeLabel) : null;
+            drawGlow(activeBbox);
+            showBubble(displayLabel, activeQuote, activeBbox);
+            // Don't re-trigger sound while holding lock, isPlaying guard handles it
+
           } else {
             drawGlow(best?.bbox || null);
             if (!isPlaying) {
               activeClass = null; activeQuote = null; activeLabel = null;
+              priorityAbsentCount = 0;
               showBubble(null, null, null);
             }
           }
