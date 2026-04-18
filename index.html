@@ -689,9 +689,9 @@
     };
 
     const VL_PRESETS = {
-      'Tiny Puppy': { pitch:1.8,  rate:1.3,  pitchShiftCents:400,  chorus:0.2, tremolo:0.3,  lowpassHz:6000, reverb:0.1, distortion:0    },
-      'Big Dog':    { pitch:0.6,  rate:0.85, pitchShiftCents:-300,  chorus:0,   tremolo:0,    lowpassHz:3000, reverb:0.3, distortion:0.15 },
-      'Old Dog':    { pitch:0.8,  rate:0.75, pitchShiftCents:-100,  chorus:0,   tremolo:0.15, lowpassHz:2500, reverb:0.2, distortion:0.25 },
+      'Tiny Puppy': { pitch:1.8,  rate:1.1,  pitchShiftCents:400,  chorus:0.2, tremolo:0.3,  lowpassHz:6000, reverb:0.1, distortion:0,    voice:'superstar' },
+      'Big Dog':    { pitch:0.6,  rate:0.85, pitchShiftCents:-300,  chorus:0,   tremolo:0,    lowpassHz:3000, reverb:0.3, distortion:0.15, voice:'fred'      },
+      'Old Dog':    { pitch:0.8,  rate:0.75, pitchShiftCents:-100,  chorus:0,   tremolo:0.15, lowpassHz:2500, reverb:0.2, distortion:0.25, voice:'ralph'     },
     };
 
     // Legacy fallback for non-dog/cat/person classes
@@ -1387,14 +1387,11 @@
             updateSliderDisplay(key);
           }
         });
-        // Auto-select a voice by gender hint
+        // Auto-select the preset's named voice (macOS novelty voices: Superstar / Fred / Ralph)
         const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-        if (btn.dataset.preset === 'Tiny Puppy') {
-          const fem = voices.find(v => v.lang.startsWith('en') && /samantha|karen|victoria|zira|tessa|moira|fiona|veena|alice|female/i.test(v.name));
-          if (fem) { vlVoiceSelect.value = fem.name; }
-        } else if (btn.dataset.preset === 'Big Dog') {
-          const male = voices.find(v => v.lang.startsWith('en') && /daniel|alex|tom|fred|lee|oliver|rishi|male/i.test(v.name));
-          if (male) { vlVoiceSelect.value = male.name; }
+        if (preset.voice) {
+          const match = voices.find(v => new RegExp('\\b' + preset.voice + '\\b', 'i').test(v.name));
+          if (match) vlVoiceSelect.value = match.name;
         }
       });
     });
