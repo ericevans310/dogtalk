@@ -603,7 +603,7 @@
 
     // ── Sound map ─────────────────────────────────────────────────────────────
     const SOUND_MAP = {
-      'person':       ['person-cough.mp3'],
+      'person':       [],
       'bird':         'bird.mp3',
       'cat':          ['cat.mp3','cat-meow2.mp3','cat-meow4.mp3','cat-meow5.mp3','cat-hiss.mp3','cat-purr.mp3','cat-growl.mp3','cat-voice.mp3','cat-calling.mp3','cat-scream.mp3','cat-cats-growl.mp3'],
       'dog':          ['dog.mp3','dog-bark2.mp3','dog-lively.mp3','dog-puppy.mp3','dog-guard.mp3','dog-howl.mp3','dog-singing.mp3','dog-whine-bark.mp3'],
@@ -862,18 +862,26 @@
     }
 
     function playSound(cls) {
-      if (!audioCtx || isPlaying) return;
-      const file = pickFile(cls);
-      if (!file) return;
+      const capturedClass = cls;
+      const capturedQuote = activeQuote;
+      const file = audioCtx ? pickFile(cls) : null;
+
+      // Speech fires regardless of whether there's a bark to play. 250ms delay
+      // when a bark will play too, so the bark kicks in first; immediate when
+      // there's no sound (e.g. person now that cough was removed).
+      if (capturedQuote) {
+        setTimeout(() => {
+          if (activeClass === capturedClass) speakQuote(capturedQuote, capturedClass);
+        }, file ? 250 : 0);
+      }
+
+      if (!audioCtx || isPlaying || !file) return;
       const now = Date.now();
       if (file === lastPlayedFile && (now - lastPlayedTime) < COOLDOWN_MS) return;
 
       const buf = bufferCache[file];
       const maxOffset = buf.duration > 4 ? Math.min(2, buf.duration - 3) : 0;
       const startOffset = maxOffset > 0 ? Math.random() * maxOffset : 0;
-
-      const capturedClass = cls;
-      const capturedQuote = activeQuote;
 
       const source = audioCtx.createBufferSource();
       source.buffer = buf;
@@ -895,14 +903,6 @@
       setTimeout(markDone, 4000);
       isPlaying = true; currentSource = source;
       lastPlayedFile = file; lastPlayedTime = now;
-
-      // Fire the TTS voice alongside the sound so they mix, rather than
-      // waiting for the sound to finish. Small delay lets the bark kick in first.
-      if (capturedQuote) {
-        setTimeout(() => {
-          if (activeClass === capturedClass) speakQuote(capturedQuote, capturedClass);
-        }, 250);
-      }
     }
 
     // ── Detection — tier system ───────────────────────────────────────────────
