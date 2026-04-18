@@ -63,25 +63,120 @@
       z-index: 10;
       display: none;
     }
+
+    #tap-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #tap-overlay .emoji {
+      font-size: 72px;
+      margin-bottom: 20px;
+    }
+
+    #tap-overlay .title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    #tap-overlay .sub {
+      font-size: 16px;
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
   <video id="video" autoplay playsinline muted></video>
-  <div id="status">Starting...</div>
+  <div id="status"></div>
   <div id="detection"></div>
   <div id="error"></div>
+
+  <div id="tap-overlay">
+    <div class="emoji">🐶</div>
+    <div class="title">Make Your Dog Talk</div>
+    <div class="sub">Tap anywhere to start</div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd/dist/coco-ssd.min.js"></script>
 
   <script>
     const video = document.getElementById('video');
-    const status = document.getElementById('status');
-    const detection = document.getElementById('detection');
-    const error = document.getElementById('error');
+    const statusEl = document.getElementById('status');
+    const detectionEl = document.getElementById('detection');
+    const errorEl = document.getElementById('error');
+    const tapOverlay = document.getElementById('tap-overlay');
 
+    // Map COCO-SSD class names to local MP3 filenames
+    const SOUND_MAP = {
+      'person':     'person.mp3',
+      'dog':        'dog.mp3',
+      'cat':        'cat.mp3',
+      'cow':        'cow.mp3',
+      'sheep':      'sheep.mp3',
+      'bird':       'bird.mp3',
+      'bear':       'bear.mp3',
+      'horse':      'horse.mp3',
+      'airplane':   'airplane.mp3',
+      'train':      'train.mp3',
+      'boat':       'boat.mp3',
+      'bus':        'bus.mp3',
+      'car':        'car.mp3',
+      'truck':      'truck.mp3',
+      'motorcycle': 'motorcycle.mp3',
+      'laptop':     'laptop.mp3',
+      'clock':      'clock.mp3',
+      'cell phone': 'cell-phone.mp3',
+    };
+
+    const COOLDOWN_MS = 3000;
+    let lastPlayedClass = null;
+    let lastPlayedTime = 0;
+    let currentAudio = null;
     let model = null;
     let detecting = false;
+    let started = false;
+
+    // Preload all audio
+    const audioCache = {};
+    for (const [cls, file] of Object.entries(SOUND_MAP)) {
+      const audio = new Audio('sounds/' + file);
+      audio.preload = 'auto';
+      audioCache[cls] = audio;
+    }
+
+    function playSound(cls) {
+      const now = Date.now();
+      const sameClass = cls === lastPlayedClass;
+      const inCooldown = (now - lastPlayedTime) < COOLDOWN_MS;
+
+      if (sameClass && inCooldown) return;
+
+      const audio = audioCache[cls];
+      if (!audio) return;
+
+      if (currentAudio && !currentAudio.paused) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+      currentAudio = audio;
+      lastPlayedClass = cls;
+      lastPlayedTime = now;
+    }
 
     async function startCamera() {
       try {
@@ -91,17 +186,17 @@
         });
         video.srcObject = stream;
         video.addEventListener('loadedmetadata', () => {
-          status.textContent = 'Camera active — loading model...';
+          statusEl.textContent = 'Loading model...';
           loadModel();
         });
       } catch (err) {
-        error.style.display = 'block';
+        errorEl.style.display = 'block';
         if (err.name === 'NotAllowedError') {
-          error.textContent = 'Camera permission denied. Please allow camera access and reload.';
+          errorEl.textContent = 'Camera permission denied. Please allow camera access and reload.';
         } else if (err.name === 'NotFoundError') {
-          error.textContent = 'No camera found on this device.';
+          errorEl.textContent = 'No camera found on this device.';
         } else {
-          error.textContent = 'Could not start camera: ' + err.message;
+          errorEl.textContent = 'Could not start camera: ' + err.message;
         }
       }
     }
@@ -109,11 +204,11 @@
     async function loadModel() {
       try {
         model = await cocoSsd.load();
-        status.textContent = 'Camera active';
+        statusEl.textContent = 'Camera active';
         detecting = true;
         detectLoop();
       } catch (err) {
-        status.textContent = 'Model failed to load';
+        statusEl.textContent = 'Model failed to load';
       }
     }
 
@@ -125,9 +220,12 @@
         if (predictions.length > 0) {
           const top = predictions[0];
           const confidence = Math.round(top.score * 100);
-          detection.textContent = top.class + ' (' + confidence + '%)';
+          detectionEl.textContent = top.class + ' (' + confidence + '%)';
+          if (SOUND_MAP[top.class]) {
+            playSound(top.class);
+          }
         } else {
-          detection.textContent = '';
+          detectionEl.textContent = '';
         }
       } catch (err) {
         // video not ready yet, skip frame
@@ -136,7 +234,12 @@
       requestAnimationFrame(detectLoop);
     }
 
-    startCamera();
+    tapOverlay.addEventListener('click', () => {
+      if (started) return;
+      started = true;
+      tapOverlay.style.display = 'none';
+      startCamera();
+    });
   </script>
 </body>
 </html>
