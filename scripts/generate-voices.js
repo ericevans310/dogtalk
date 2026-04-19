@@ -236,19 +236,25 @@ async function runSamples() {
   console.log(`  open ${paths}`);
 }
 
-async function runFull(onlyClasses) {
+async function runFull(onlyClasses, additive) {
   const data = loadQuotes();
 
-  // Preserve entries for classes we're not regenerating (e.g. Antoni dog MP3s
-  // stay put when we're only running dog_small).
   const manifestPath = path.join(VOICES_DIR, 'manifest.json');
   let manifest = {};
-  if (onlyClasses) {
-    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+  let existingManifest = {};
+  try { existingManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+
+  if (additive) {
+    // Start from the existing manifest; we'll only touch quotes that don't
+    // already resolve to a working MP3.
+    manifest = JSON.parse(JSON.stringify(existingManifest));
+  } else if (onlyClasses) {
+    // Preserve other classes; wipe the ones we're about to regenerate.
+    manifest = JSON.parse(JSON.stringify(existingManifest));
     for (const c of onlyClasses) delete manifest[c];
   }
 
-  let generated = 0, cached = 0, namedSkipped = 0, errors = 0, fellBack = 0;
+  let generated = 0, cached = 0, namedSkipped = 0, errors = 0, fellBack = 0, preserved = 0;
   let quotaHit = false;
 
   // Returns the relPath for a default-voice version of this quote that already
@@ -283,6 +289,17 @@ async function runFull(onlyClasses) {
     if (quote.includes('{NAME}')) { namedSkipped++; continue; }
     const clean = stripEmoji(quote);
     if (!clean) continue;
+
+    // In additive mode, preserve any existing manifest entry (e.g. Antoni
+    // dog clip from the ElevenLabs run) as long as its MP3 still exists.
+    if (additive) {
+      const prev = existingManifest[cls] && existingManifest[cls][quote];
+      if (prev && fs.existsSync(path.join(REPO_ROOT, prev))) {
+        recordManifest(cls, quote, prev);
+        preserved++;
+        continue;
+      }
+    }
 
     const v       = voiceFor(cls);
     const slug    = slugClass(cls);
@@ -330,6 +347,7 @@ async function runFull(onlyClasses) {
   console.log(`\nProvider:     ${provider.name}`);
   console.log(`Generated:    ${generated}`);
   console.log(`Already had:  ${cached}`);
+  if (additive) console.log(`Preserved:    ${preserved}`);
   console.log(`Fallback:     ${fellBack}`);
   console.log(`Skipped name: ${namedSkipped}`);
   console.log(`Errors:       ${errors}`);
@@ -358,7 +376,8 @@ async function main() {
     if (!val) { console.error('--only requires a comma-separated class list'); process.exit(1); }
     onlyClasses = new Set(val.split(',').map(s => s.trim()).filter(Boolean));
   }
-  return runFull(onlyClasses);
+  const additive = argv.includes('--additive');
+  return runFull(onlyClasses, additive);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

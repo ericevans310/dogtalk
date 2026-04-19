@@ -7,7 +7,16 @@
     "I missed you. All 5 minutes.": "voices/person/6f7a3ae3d7.mp3",
     "Did someone say TREAT??": "voices/person/670c516f40.mp3",
     "I love you so much it hurts.": "voices/person/e242bb878a.mp3",
-    "Please. I'm starving. (5 min ago)": "voices/person/79fc0fddf4.mp3"
+    "Please. I'm starving. (5 min ago)": "voices/person/79fc0fddf4.mp3",
+    "Your hands smell AMAZING.": "voices/person/da0265d155.mp3",
+    "Is that a new smell on your jacket?? Tell me everything.": "voices/person/614510171f.mp3",
+    "Please don't leave again. Ever.": "voices/person/efb1be1539.mp3",
+    "If you're eating, I'm sitting. That's the rule.": "voices/person/a6e3b05913.mp3",
+    "Can I come on the couch?? I'm already on the couch.": "voices/person/ea8ac966aa.mp3",
+    "Look at me. LOOK. I'm being SO good.": "voices/person/2a3e585ef9.mp3",
+    "What's in the bag?? IS IT FOR ME??": "voices/person/fc4c5c6cf5.mp3",
+    "You were gone SO long. (8 minutes.)": "voices/person/c8e7fe42ba.mp3",
+    "Have you been petting other dogs?? I can tell.": "voices/person/d1ecaee54d.mp3"
   },
   "dog": {
     "NEW FRIEND!! I LOVE YOU!!": "voices/dog/27e5d61fc7.mp3",
@@ -28,7 +37,13 @@
     "My human says I'm a good boy. Are you?": "voices/dog/1ae1b55aac.mp3",
     "Let's roll in something gross together.": "voices/dog/d6b3593a82.mp3",
     "Is it walk time? Is it walk time??": "voices/dog/effcfb7c56.mp3",
-    "I knew I'd love you the second I saw you.": "voices/dog/538af44b3f.mp3"
+    "I knew I'd love you the second I saw you.": "voices/dog/538af44b3f.mp3",
+    "I'm TELLING my human about you!": "voices/dog/3a024f72cb.mp3",
+    "You smell like adventure.": "voices/dog/8456deec0e.mp3",
+    "Wanna bark at nothing together??": "voices/dog/0d0d87a21e.mp3",
+    "Are we friends yet?? WE'RE FRIENDS YET??": "voices/dog/c8ff524bfa.mp3",
+    "Do you know where the squirrels went??": "voices/dog/84751ec0a3.mp3",
+    "I'm jumping on you now. Just warning you.": "voices/dog/29aa2d3e91.mp3"
   },
   "cat": {
     "A CAT!! NEW FRIEND!! 🐾": "voices/cat/3d406d777d.mp3",
@@ -45,14 +60,26 @@
     "I respect your whiskers. So much.": "voices/cat/eb8d31a49c.mp3",
     "Why are you so quiet?? Teach me!!": "voices/cat/9191a95edc.mp3",
     "My human likes you too. Good news.": "voices/cat/79e06d3968.mp3",
-    "Wanna nap together?? PLEASE??": "voices/cat/660ce6a6c4.mp3"
+    "Wanna nap together?? PLEASE??": "voices/cat/660ce6a6c4.mp3",
+    "Oh!! Tiny friend!!": "voices/cat/696e9d0b5f.mp3",
+    "I know we're supposed to hate each other. I don't remember why.": "voices/cat/b29c548c14.mp3",
+    "Please don't run, please don't run, PLEASE don't run.": "voices/cat/a7c13d26ed.mp3",
+    "I will not chase. (I might chase.)": "voices/cat/6e72e2ae4c.mp3",
+    "Your scratchy feet are amazing. Respect.": "voices/cat/1cc36ffe4a.mp3",
+    "Is your human nice? Mine is the BEST.": "voices/cat/81d5f9e763.mp3",
+    "Wait — are we friends now?? Are we??": "voices/cat/8f7ce3890d.mp3"
   },
   "bird": {
     "THE AUDACITY. IN MY YARD.": "voices/bird/f81ff63c56.mp3",
     "I almost caught one once. Almost.": "voices/bird/42f8d7e59b.mp3",
     "INTRUDER ALERT 🚨": "voices/bird/cd7a6eab10.mp3",
     "I could catch it. I choose not to.": "voices/bird/44cf6e60ea.mp3",
-    "Come down here and say that.": "voices/bird/8314abb4ea.mp3"
+    "Come down here and say that.": "voices/bird/8314abb4ea.mp3",
+    "If I run fast enough, I WILL fly.": "voices/bird/c2eb581a95.mp3",
+    "I heard you from three houses away.": "voices/bird/ad6b6d863a.mp3",
+    "STOP being up there. Come DOWN.": "voices/bird/89623fefac.mp3",
+    "I've dreamed about catching one of you.": "voices/bird/7e6d252c92.mp3",
+    "Every time. EVERY TIME I try.": "voices/bird/e380b45157.mp3"
   },
   "horse": {
     "That's just a BIG dog. Right?": "voices/horse/bdbbcbd970.mp3",
@@ -96,7 +123,12 @@
     "BARK BARK BARK BARK": "voices/car/d12c6469c2.mp3",
     "It's getting away!!": "voices/car/d41f1e9de7.mp3",
     "I chased one once. I won.": "voices/car/7baf9f87bf.mp3",
-    "Beep beep means DANGER.": "voices/car/770294fb8e.mp3"
+    "Beep beep means DANGER.": "voices/car/770294fb8e.mp3",
+    "STOP HERE. LISTEN. STOP.": "voices/car/a067da4e93.mp3",
+    "It's the WHEELS. The wheels are evil.": "voices/car/4c6a9e938d.mp3",
+    "I could outrun that. Easily. Probably.": "voices/car/b36806f0dc.mp3",
+    "My human sits in one of these. Betrayal.": "voices/car/f33ff7fb35.mp3",
+    "Wait — is that MY human?? WAIT!!": "voices/car/e56a24fc74.mp3"
   },
   "motorcycle": {
     "EXTREMELY LOUD. TELL EVERYONE.": "voices/motorcycle/bfb9492bac.mp3",
@@ -205,17 +237,27 @@
   "tv": {
     "I saw a dog on here once.": "voices/tv/07326f58ca.mp3",
     "We made eye contact. We bonded.": "voices/tv/13a4f7fb7c.mp3",
-    "Dogs live inside the box sometimes.": "voices/tv/a1563f1edd.mp3"
+    "Dogs live inside the box sometimes.": "voices/tv/a1563f1edd.mp3",
+    "A dog. There. I saw it. I'm sure.": "voices/tv/e4ad574a6f.mp3",
+    "WAIT. DID IT JUST MOVE??": "voices/tv/1f260f8fdb.mp3",
+    "I bark AT the dog AT the tv.": "voices/tv/b8e790a0e2.mp3"
   },
   "cell phone": {
     "They look at this instead of me. 😤": "voices/cell-phone/508ed2433f.mp3",
     "I sat on it once. Not sorry.": "voices/cell-phone/4550d10083.mp3",
-    "Me > whatever is on that screen.": "voices/cell-phone/83d3dfd606.mp3"
+    "Me > whatever is on that screen.": "voices/cell-phone/83d3dfd606.mp3",
+    "Is it MORE important than me?? Impossible.": "voices/cell-phone/23d54fe69a.mp3",
+    "Tap tap tap. That's all they do.": "voices/cell-phone/d42e3e025b.mp3",
+    "I knocked it off the couch once. No regrets.": "voices/cell-phone/24ef7da039.mp3",
+    "If it rings, we BOTH panic.": "voices/cell-phone/e5dd98f133.mp3"
   },
   "laptop": {
     "I will sit on this for attention.": "voices/laptop/46d0f3bd3c.mp3",
     "Warm. Perfect nap surface. Mine.": "voices/laptop/8c2916222f.mp3",
-    "Typing = ignoring me. Unacceptable.": "voices/laptop/0ff5331317.mp3"
+    "Typing = ignoring me. Unacceptable.": "voices/laptop/0ff5331317.mp3",
+    "Why does this box make you so serious?": "voices/laptop/bd3f8916d7.mp3",
+    "If I sit on it, you play with me instead.": "voices/laptop/84cc04836e.mp3",
+    "I sigh at it. It doesn't care.": "voices/laptop/669889f8ad.mp3"
   },
   "keyboard": {
     "I walked on this and sent an email.": "voices/keyboard/1a872052ef.mp3",
@@ -230,7 +272,10 @@
     "Oh no. They're LEAVING. 😢": "voices/backpack/148e5b0aa2.mp3",
     "Backpack = goodbye. I hate backpack.": "voices/backpack/5a2fdaa0fc.mp3",
     "Please. I'll be so lonely.": "voices/backpack/31b7e2a2d1.mp3",
-    "No no no no no no no.": "voices/backpack/11aeda4ea8.mp3"
+    "No no no no no no no.": "voices/backpack/11aeda4ea8.mp3",
+    "WAIT. WHERE ARE YOU GOING??": "voices/backpack/cdc544117f.mp3",
+    "Can I come?? I'll be so small.": "voices/backpack/1dd5571bbe.mp3",
+    "Every time. EVERY TIME with the backpack.": "voices/backpack/06d0dbec84.mp3"
   },
   "suitcase": {
     "No. No no no no no. NO.": "voices/suitcase/27230c863a.mp3",
@@ -243,15 +288,26 @@
   "bed": {
     "They say I'm not allowed. They're wrong.": "voices/bed/d04f2195ff.mp3",
     "This is mine. Officially mine now.": "voices/bed/0f369e42ed.mp3",
-    "Best nap location. Confirmed.": "voices/bed/110eaeeebf.mp3"
+    "Best nap location. Confirmed.": "voices/bed/110eaeeebf.mp3",
+    "I snuck up. Don't look at me.": "voices/bed/d15e63c9eb.mp3",
+    "The BEST. The absolute BEST.": "voices/bed/0382eca2fb.mp3",
+    "You're not allowed to move. My leg is on you.": "voices/bed/a8694e537f.mp3"
   },
   "couch": {
     "I'm technically allowed. Maybe.": "voices/couch/0cd39152a7.mp3",
-    "Ultimate nap destination. 🛋️": "voices/couch/1e4bff2728.mp3"
+    "Ultimate nap destination. 🛋️": "voices/couch/1e4bff2728.mp3",
+    "Officially not allowed. I'm on it anyway.": "voices/couch/dcefec30c1.mp3",
+    "Best spot in the house. You agree.": "voices/couch/b7d12d0659.mp3",
+    "Warm. Soft. Legally mine.": "voices/couch/3b0f81374a.mp3",
+    "If you leave, I steal your spot.": "voices/couch/7de8b81f4f.mp3"
   },
   "chair": {
     "I sit here and stare until fed.": "voices/chair/b95af1fc67.mp3",
-    "Good staring chair. Strategic location.": "voices/chair/07744ba4ef.mp3"
+    "Good staring chair. Strategic location.": "voices/chair/07744ba4ef.mp3",
+    "Sit here. Eat here. Drop crumbs. Please.": "voices/chair/0af47f8832.mp3",
+    "This chair has a CRUMB policy. I'm the enforcer.": "voices/chair/3b28eb1787.mp3",
+    "Your chair = my chair when you're not looking.": "voices/chair/88c856c09f.mp3",
+    "I have claimed this seat. Forever.": "voices/chair/ff60cc5cd7.mp3"
   },
   "teddy bear": {
     "I have destroyed seventeen of these.": "voices/teddy-bear/538e139c55.mp3",
@@ -274,7 +330,10 @@
   "fire hydrant": {
     "This one is MINE. 🔴": "voices/fire-hydrant/309d6564a9.mp3",
     "Property of all dogs. By law.": "voices/fire-hydrant/f99d5baba4.mp3",
-    "I have claimed this officially.": "voices/fire-hydrant/9d3c485b61.mp3"
+    "I have claimed this officially.": "voices/fire-hydrant/9d3c485b61.mp3",
+    "Personal inspection required.": "voices/fire-hydrant/611042176a.mp3",
+    "Yes. Yes. This was here last time too.": "voices/fire-hydrant/388a23031e.mp3",
+    "A national landmark, really.": "voices/fire-hydrant/25a899adc7.mp3"
   },
   "stop sign": {
     "STOP (I personally would not stop)": "voices/stop-sign/4294528c25.mp3",
@@ -350,7 +409,11 @@
   },
   "dining table": {
     "Food happens on this surface.": "voices/dining-table/11b285c12f.mp3",
-    "I sit next to this. Always.": "voices/dining-table/cf036390ef.mp3"
+    "I sit next to this. Always.": "voices/dining-table/cf036390ef.mp3",
+    "Something fell. I'll get it. I'll GET IT.": "voices/dining-table/416c6ab487.mp3",
+    "I have been a GOOD DOG for twelve full minutes.": "voices/dining-table/6da9bec702.mp3",
+    "The smells. The SMELLS.": "voices/dining-table/0fc8eb5449.mp3",
+    "One crumb. That's all I ask. ONE.": "voices/dining-table/58796b0845.mp3"
   },
   "toothbrush": {
     "They use this daily. I do not.": "voices/toothbrush/388fb0871d.mp3",
@@ -383,6 +446,12 @@
     "My human says I'm a good boy. Are you?": "voices/dog-small/0e1c059668.mp3",
     "Let's roll in something gross together.": "voices/dog-small/4e91c786a0.mp3",
     "Is it walk time? Is it walk time??": "voices/dog-small/18a72e8ace.mp3",
-    "I knew I'd love you the second I saw you.": "voices/dog-small/7239c02c2f.mp3"
+    "I knew I'd love you the second I saw you.": "voices/dog-small/7239c02c2f.mp3",
+    "I'm TELLING my human about you!": "voices/dog-small/4ba6bb0bc7.mp3",
+    "You smell like adventure.": "voices/dog-small/c2538e72fb.mp3",
+    "Wanna bark at nothing together??": "voices/dog-small/ce62bda4d1.mp3",
+    "Are we friends yet?? WE'RE FRIENDS YET??": "voices/dog-small/d8c69a35d7.mp3",
+    "Do you know where the squirrels went??": "voices/dog-small/2f582ffc62.mp3",
+    "I'm jumping on you now. Just warning you.": "voices/dog-small/540913a3cf.mp3"
   }
 }
