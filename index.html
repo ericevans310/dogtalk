@@ -848,6 +848,10 @@
     const COOLDOWN_MS = 1000;
     let lastPlayedFile = null, lastPlayedTime = 0;
     let currentSource = null, isPlaying = false;
+    // Quote rotation cadence — re-pick a quote every 2-3 actual sound playbacks
+    // so the same activeClass doesn't loop on the same line forever.
+    let soundsSinceQuoteRotate = 0;
+    let nextQuoteRotateAt = 2 + Math.floor(Math.random() * 2);
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
     const bufferCache = {};
@@ -915,6 +919,19 @@
       setTimeout(markDone, 4000);
       isPlaying = true; currentSource = source;
       lastPlayedFile = file; lastPlayedTime = now;
+
+      // Rotate to a fresh quote every 2-3 sounds so the dog doesn't repeat the
+      // same line on a long detection. Layered on top of the next sound.
+      soundsSinceQuoteRotate++;
+      if (soundsSinceQuoteRotate >= nextQuoteRotateAt && capturedClass === activeClass) {
+        soundsSinceQuoteRotate = 0;
+        nextQuoteRotateAt = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        activeQuote = pickQuote(capturedClass);
+        lastSpokenQuote = null;
+        setTimeout(() => {
+          if (activeClass === capturedClass) speakQuote(activeQuote, capturedClass);
+        }, 250);
+      }
     }
 
     // ── Detection — tier system ───────────────────────────────────────────────
@@ -1150,6 +1167,7 @@
             activeBbox         = nextBbox;
             activeAbsentFrames = 0;
             lastSpokenQuote    = null;  // new subject → next quote can speak even if string matches
+            soundsSinceQuoteRotate = 0;
             if (nextClass) {
               activeLockedAt = Date.now();
               activeQuote    = pickQuote(nextClass);
@@ -1183,6 +1201,7 @@
                       activeQuote     = pickQuote(mnCls);
                       activeLockedAt  = Date.now();
                       lastSpokenQuote = null;
+                      soundsSinceQuoteRotate = 0;
                       checkDiscovery(mnCls);
                     }
                   }
