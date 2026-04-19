@@ -474,14 +474,20 @@
       const ox = (cw-vw*scale)/2, oy = (ch-vh*scale)/2;
       const screenX = bx*scale+ox+(bw*scale)/2;
       const bboxTop = by*scale+oy, bboxBot = (by+bh)*scale+oy;
-      const clampedX = Math.max(130, Math.min(cw-130, screenX));
+      // Half the bubble's max-width (~120 px + margin), clamped to half the
+      // canvas so min/max can't invert on very narrow viewports.
+      const margin   = Math.min(130, cw / 2);
+      const clampedX = Math.max(margin, Math.min(cw - margin, screenX));
       labelEl.textContent = label || ''; labelEl.style.display = label ? 'block' : 'none';
       quoteEl.textContent = resolved;
       bubbleEl.style.left = clampedX + 'px';
       if (bboxTop > 120) {
         bubbleEl.className = 'above'; bubbleEl.style.top = bboxTop + 'px';
-      } else {
+      } else if (bboxBot < ch - 60) {
         bubbleEl.className = 'below'; bubbleEl.style.top = bboxBot + 'px';
+      } else {
+        // Subject fills the frame — pin the bubble to the top so it doesn't clip off.
+        bubbleEl.className = 'below'; bubbleEl.style.top = '20px';
       }
       bubbleEl.style.display = 'block';
     }
@@ -712,6 +718,9 @@
     async function speakQuote(quote, cls) {
       if (!quote || !ttsEnabled) return;
       const resolved = resolveQuote(quote);
+      // Skip dedup for unspeakable picks (pure-emoji etc.) so they can't poison
+      // lastSpokenQuote and silently block the next real quote.
+      if (!stripEmoji(resolved)) return;
       if (resolved === lastSpokenQuote) return;
       lastSpokenQuote = resolved;
 
@@ -864,6 +873,8 @@
     function playSound(cls) {
       const capturedClass = cls;
       const capturedQuote = activeQuote;
+      // iOS/Safari can auto-suspend the AudioContext after screen sleep or backgrounding.
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       const file = audioCtx ? pickFile(cls) : null;
 
       // Speech fires regardless of whether there's a bark to play. 250ms delay
@@ -1137,6 +1148,7 @@
             activeTier         = nextTier;
             activeBbox         = nextBbox;
             activeAbsentFrames = 0;
+            lastSpokenQuote    = null;  // new subject → next quote can speak even if string matches
             if (nextClass) {
               activeLockedAt = Date.now();
               activeQuote    = pickQuote(nextClass);
@@ -1164,11 +1176,13 @@
                     if (mnCls === activeClass || mnCls === null) {
                       activeLabel = pretty;
                     } else if (mnCls && results[0].probability >= 0.55 && canOverride(getTier(mnCls))) {
-                      activeClass    = mnCls;
-                      activeTier     = getTier(mnCls);
-                      activeLabel    = pretty;
-                      activeQuote    = pickQuote(mnCls);
-                      activeLockedAt = Date.now();
+                      activeClass     = mnCls;
+                      activeTier      = getTier(mnCls);
+                      activeLabel     = pretty;
+                      activeQuote     = pickQuote(mnCls);
+                      activeLockedAt  = Date.now();
+                      lastSpokenQuote = null;
+                      checkDiscovery(mnCls);
                     }
                   }
                 } catch {}
@@ -1198,7 +1212,9 @@
               ).join('   ');
           }
 
-        } catch {}
+        } catch (err) {
+          console.warn('[dogtalk] detectLoop error:', err);
+        }
         detectBusy = false;
       }
       requestAnimationFrame(detectLoop);
@@ -1279,6 +1295,9 @@
       collModal.classList.add('open');
     });
     collCloseBtn.addEventListener('click', () => collModal.classList.remove('open'));
+    collModal.addEventListener('click', (e) => {
+      if (e.target === collModal) collModal.classList.remove('open');
+    });
 
     ttsBtnEl.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1468,7 +1487,10 @@
       if (started) return;
       started = true;
       tapOverlay.style.display = 'none';
-      try { audioCtx = new AudioCtx(); } catch (e) { console.warn('AudioContext failed', e); }
+      try {
+        audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (e) { console.warn('AudioContext failed', e); }
       loadSounds();
       startCamera();
     }
