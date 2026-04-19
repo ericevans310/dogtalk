@@ -24,11 +24,33 @@ const VOICES_DIR = path.join(REPO_ROOT, 'voices');
 // IDs are from ElevenLabs' default voice library. If any 404, swap in IDs from
 // your account at https://elevenlabs.io/app/voice-lab.
 const VOICES = {
-  dog:    { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni' },  // energetic, warm
-  cat:    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily'   },  // British female, reads haughty
-  person: { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'   },  // neutral, deep
+  dog:    { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni'   },  // energetic, warm
+  cat:    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily'     },  // British female
+  person: { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'     },  // neutral, deep
+  // Bucket voices for variety
+  charlie:  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie'  },  // animals
+  brian:    { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian'    },  // vehicles
+  matilda:  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda'  },  // food + tableware
+  daniel:   { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel'   },  // tech + appliances
+  arnold:   { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold'   },  // furniture/toys/outdoor
 };
-const DEFAULT_VOICE = VOICES.person; // used for every other class + DEFAULT_QUOTES
+
+// Bucket assignments — anything not listed here uses DEFAULT_VOICE.
+const VOICE_BUCKETS = {
+  charlie: ['bird','horse','cow','sheep','elephant','bear','zebra','giraffe'],
+  brian:   ['car','motorcycle','bicycle','bus','truck','airplane','train','boat'],
+  matilda: ['pizza','hot dog','apple','banana','sandwich','cake','donut','broccoli','carrot','orange',
+            'bottle','wine glass','bowl','fork','knife','spoon','toothbrush'],
+  daniel:  ['toilet','sink','refrigerator','toaster','microwave','oven','tv','cell phone','laptop','keyboard','clock','hair drier'],
+  arnold:  ['bed','couch','chair','dining table','teddy bear','sports ball','frisbee','surfboard','baseball bat','tennis racket','skateboard',
+            'fire hydrant','stop sign','bench','potted plant','book','vase','scissors','backpack','suitcase','umbrella','tie','handbag'],
+};
+const CLASS_TO_VOICE = {};
+for (const [voiceKey, classes] of Object.entries(VOICE_BUCKETS)) {
+  for (const cls of classes) CLASS_TO_VOICE[cls] = VOICES[voiceKey];
+}
+
+const DEFAULT_VOICE = VOICES.person; // person + DEFAULT_QUOTES + anything unbucketed
 
 const MODEL_ID = 'eleven_multilingual_v2';
 const API_BASE = 'https://api.elevenlabs.io/v1/text-to-speech';
@@ -50,7 +72,7 @@ function hashKey(cls, text, voiceId) {
 }
 
 function voiceFor(cls) {
-  return VOICES[cls] || DEFAULT_VOICE;
+  return VOICES[cls] || CLASS_TO_VOICE[cls] || DEFAULT_VOICE;
 }
 
 async function tts(text, voiceId) {
@@ -142,7 +164,22 @@ async function runSamples() {
 async function runFull() {
   const data = loadQuotes();
   const manifest = {};
-  let generated = 0, cached = 0, namedSkipped = 0, errors = 0;
+  let generated = 0, cached = 0, namedSkipped = 0, errors = 0, fellBack = 0;
+  let quotaHit = false;
+
+  // Returns the relPath for the Adam-voiced version of this quote if that
+  // file already exists on disk, or null otherwise.
+  function adamFallback(cls, clean) {
+    const slug = slugClass(cls);
+    const adamHash = hashKey(cls, clean, DEFAULT_VOICE.id);
+    const rel = `voices/${slug}/${adamHash}.mp3`;
+    return fs.existsSync(path.join(REPO_ROOT, rel)) ? rel : null;
+  }
+
+  function recordManifest(cls, quote, relPath) {
+    manifest[cls] = manifest[cls] || {};
+    manifest[cls][quote] = relPath;
+  }
 
   for (const { cls, quote } of allItems(data)) {
     if (quote.includes('{NAME}')) { namedSkipped++; continue; }
@@ -155,26 +192,38 @@ async function runFull() {
     const relPath = `voices/${slug}/${hash}.mp3`;
     const absPath = path.join(REPO_ROOT, relPath);
 
-    manifest[cls] = manifest[cls] || {};
-    manifest[cls][quote] = relPath;
+    if (fs.existsSync(absPath)) {
+      recordManifest(cls, quote, relPath);
+      cached++;
+      continue;
+    }
 
-    if (fs.existsSync(absPath)) { cached++; continue; }
+    // If quota's already exhausted, don't bother calling — fall straight back.
+    if (quotaHit) {
+      const fb = adamFallback(cls, clean);
+      if (fb) { recordManifest(cls, quote, fb); fellBack++; }
+      continue;
+    }
 
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
     try {
       const mp3 = await tts(clean, v.id);
       fs.writeFileSync(absPath, mp3);
+      recordManifest(cls, quote, relPath);
       generated++;
       console.log(`  + [${cls}] ${hash} "${clean}"`);
       await new Promise(r => setTimeout(r, REQUEST_DELAY_MS));
     } catch (e) {
       errors++;
       console.error(`  ! [${cls}] FAILED "${clean}" → ${e.message}`);
-      // Halt early on auth/quota errors so we don't burn through a key.
+      // On auth/quota errors, switch to fallback-only mode for the remainder
+      // so we still produce a complete manifest pointing to whatever exists.
       if (/401|402|403|429/.test(e.message)) {
-        console.error('Stopping early: looks like an auth or quota error.');
-        break;
+        console.error('Quota/auth error — finishing in fallback-only mode (no more API calls).');
+        quotaHit = true;
       }
+      const fb = adamFallback(cls, clean);
+      if (fb) { recordManifest(cls, quote, fb); fellBack++; }
     }
   }
 
@@ -185,6 +234,7 @@ async function runFull() {
 
   console.log(`\nGenerated:    ${generated}`);
   console.log(`Already had:  ${cached}`);
+  console.log(`Adam fallback:${fellBack}`);
   console.log(`Skipped name: ${namedSkipped}`);
   console.log(`Errors:       ${errors}`);
   console.log(`Manifest:     ${path.relative(REPO_ROOT, path.join(VOICES_DIR, 'manifest.json'))}`);
