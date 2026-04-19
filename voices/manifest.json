@@ -1,6 +1,6 @@
 {
   "person": {
-    "PET ME RIGHT NOW \ud83d\udc3e": "voices/person/31a8899150.mp3",
+    "PET ME RIGHT NOW 🐾": "voices/person/31a8899150.mp3",
     "YOU'RE HOME!! YOU'RE HOME!!": "voices/person/32b43344fe.mp3",
     "Walk time? WALK TIME??": "voices/person/c2c52c35d9.mp3",
     "Belly rubs. Not optional.": "voices/person/a4501e6a56.mp3",
@@ -15,7 +15,7 @@
     "Wanna sniff butts? I'll go first.": "voices/dog/b616c3f229.mp3",
     "YOU'RE ALSO A DOG!! WOW!!": "voices/dog/03e5db03da.mp3",
     "Play?? LET'S PLAY!!": "voices/dog/99e8afd81e.mp3",
-    "Another good boy detected \ud83d\udc3e": "voices/dog/9b208fbc8c.mp3",
+    "Another good boy detected 🐾": "voices/dog/9b208fbc8c.mp3",
     "I would die for you and I just met you.": "voices/dog/e3e5f200d9.mp3",
     "Hi hi hi hi hi hi hi!!": "voices/dog/9a04651676.mp3",
     "Best day ever. Best DAY ever.": "voices/dog/9a1a91f92c.mp3",
@@ -31,7 +31,7 @@
     "I knew I'd love you the second I saw you.": "voices/dog/538af44b3f.mp3"
   },
   "cat": {
-    "A CAT!! NEW FRIEND!! \ud83d\udc3e": "voices/cat/3d406d777d.mp3",
+    "A CAT!! NEW FRIEND!! 🐾": "voices/cat/3d406d777d.mp3",
     "Wanna play?? PLEASE wanna play??": "voices/cat/fc4a24b377.mp3",
     "Hi friend!! Wanna sniff??": "voices/cat/8cc62cbf00.mp3",
     "I love cats. I love everyone.": "voices/cat/5c41fcd1ce.mp3",
@@ -50,7 +50,7 @@
   "bird": {
     "THE AUDACITY. IN MY YARD.": "voices/bird/f81ff63c56.mp3",
     "I almost caught one once. Almost.": "voices/bird/42f8d7e59b.mp3",
-    "INTRUDER ALERT \ud83d\udea8": "voices/bird/cd7a6eab10.mp3",
+    "INTRUDER ALERT 🚨": "voices/bird/cd7a6eab10.mp3",
     "I could catch it. I choose not to.": "voices/bird/44cf6e60ea.mp3",
     "Come down here and say that.": "voices/bird/8314abb4ea.mp3"
   },
@@ -61,7 +61,7 @@
     "Same energy as me but bigger.": "voices/horse/ebb90414ed.mp3"
   },
   "cow": {
-    "It says MOO. I say WOOF. \u270c\ufe0f": "voices/cow/6bd8ada943.mp3",
+    "It says MOO. I say WOOF. ✌️": "voices/cow/6bd8ada943.mp3",
     "Big and round. 10/10 would sniff.": "voices/cow/6f05b84a5a.mp3",
     "We have an understanding.": "voices/cow/1826b1024e.mp3"
   },
@@ -76,7 +76,7 @@
     "Respect. Also fear. Mostly fear.": "voices/elephant/65ae7e043d.mp3"
   },
   "bear": {
-    "ABORT. ABORT. ABORT. \ud83d\udc3b": "voices/bear/e3f4119eb3.mp3",
+    "ABORT. ABORT. ABORT. 🐻": "voices/bear/e3f4119eb3.mp3",
     "THIS IS NOT A BIG DOG.": "voices/bear/848ab19eab.mp3",
     "Every hair on my body: standing.": "voices/bear/454e0c3fed.mp3",
     "We are leaving. RIGHT NOW.": "voices/bear/c87fc5091f.mp3"
@@ -87,7 +87,7 @@
     "Is it a horse? Is it a cow?? BOTH??": "voices/zebra/ccd465b7f2.mp3"
   },
   "giraffe": {
-    "THAT NECK. THAT NECK. \ud83d\ude33": "voices/giraffe/70af50076a.mp3",
+    "THAT NECK. THAT NECK. 😳": "voices/giraffe/70af50076a.mp3",
     "How does it fit through doors??": "voices/giraffe/4e88dac077.mp3",
     "6 jumps to reach its face. Worth it.": "voices/giraffe/f1ddab9b07.mp3"
   },
@@ -151,11 +151,11 @@
   },
   "sandwich": {
     "Leave the room. Just 2 seconds.": "voices/sandwich/b4b471e339.mp3",
-    "I don't know what's in there but\u2014": "voices/sandwich/fdeee02e16.mp3",
+    "I don't know what's in there but—": "voices/sandwich/fdeee02e16.mp3",
     "Every ingredient smells incredible.": "voices/sandwich/def1e25802.mp3"
   },
   "cake": {
-    "IS THIS MY BIRTHDAY?? \ud83c\udf82": "voices/cake/e54bb29ccb.mp3",
+    "IS THIS MY BIRTHDAY?? 🎂": "voices/cake/e54bb29ccb.mp3",
     "I would like all of this please.": "voices/cake/9566d81454.mp3",
     "One bite. Okay maybe all of it.": "voices/cake/5781bacb97.mp3"
   },
@@ -176,7 +176,7 @@
     "Smells weird. Will sniff more.": "voices/orange/fba615bef6.mp3"
   },
   "toilet": {
-    "My forbidden water bowl \ud83d\udebd": "voices/toilet/150078a228.mp3",
+    "My forbidden water bowl 🚽": "voices/toilet/150078a228.mp3",
     "Cool, refreshing, and APPARENTLY WRONG.": "voices/toilet/937eba39a8.mp3",
     "They say no every time. Every time.": "voices/toilet/69f90572ff.mp3"
   },
@@ -185,7 +185,7 @@
     "I prefer puddles but this works.": "voices/sink/8ec3d6c7e6.mp3"
   },
   "refrigerator": {
-    "The cold food box \ud83e\uddca": "voices/refrigerator/e05f900ef6.mp3",
+    "The cold food box 🧊": "voices/refrigerator/e05f900ef6.mp3",
     "Every time it opens: I appear.": "voices/refrigerator/d968b7038b.mp3",
     "Food is definitely in there.": "voices/refrigerator/50202d56ef.mp3"
   },
@@ -208,7 +208,7 @@
     "Dogs live inside the box sometimes.": "voices/tv/a1563f1edd.mp3"
   },
   "cell phone": {
-    "They look at this instead of me. \ud83d\ude24": "voices/cell-phone/508ed2433f.mp3",
+    "They look at this instead of me. 😤": "voices/cell-phone/508ed2433f.mp3",
     "I sat on it once. Not sorry.": "voices/cell-phone/4550d10083.mp3",
     "Me > whatever is on that screen.": "voices/cell-phone/83d3dfd606.mp3"
   },
@@ -227,7 +227,7 @@
     "Time means nothing except dinner time.": "voices/clock/dc1cd72c2f.mp3"
   },
   "backpack": {
-    "Oh no. They're LEAVING. \ud83d\ude22": "voices/backpack/148e5b0aa2.mp3",
+    "Oh no. They're LEAVING. 😢": "voices/backpack/148e5b0aa2.mp3",
     "Backpack = goodbye. I hate backpack.": "voices/backpack/5a2fdaa0fc.mp3",
     "Please. I'll be so lonely.": "voices/backpack/31b7e2a2d1.mp3",
     "No no no no no no no.": "voices/backpack/11aeda4ea8.mp3"
@@ -247,7 +247,7 @@
   },
   "couch": {
     "I'm technically allowed. Maybe.": "voices/couch/0cd39152a7.mp3",
-    "Ultimate nap destination. \ud83d\udecb\ufe0f": "voices/couch/1e4bff2728.mp3"
+    "Ultimate nap destination. 🛋️": "voices/couch/1e4bff2728.mp3"
   },
   "chair": {
     "I sit here and stare until fed.": "voices/chair/b95af1fc67.mp3",
@@ -260,19 +260,19 @@
   },
   "sports ball": {
     "BALL!! THROW IT!! PLEASE!!": "voices/sports-ball/42f5d2484d.mp3",
-    "BALL BALL BALL BALL BALL \ud83c\udfbe": "voices/sports-ball/69f1f46edc.mp3",
+    "BALL BALL BALL BALL BALL 🎾": "voices/sports-ball/69f1f46edc.mp3",
     "I will fetch this for LITERALLY ever.": "voices/sports-ball/71f51300bf.mp3"
   },
   "frisbee": {
     "THE FLYING DISC!! I KNOW THIS!!": "voices/frisbee/b4fc76aa4e.mp3",
-    "THROW IT THROW IT THROW IT \ud83e\udd4f": "voices/frisbee/bde523ac36.mp3"
+    "THROW IT THROW IT THROW IT 🥏": "voices/frisbee/bde523ac36.mp3"
   },
   "surfboard": {
     "Why is the human on the water??": "voices/surfboard/b643d069d8.mp3",
     "Big water = not for me. Mostly.": "voices/surfboard/e7d183ceb6.mp3"
   },
   "fire hydrant": {
-    "This one is MINE. \ud83d\udd34": "voices/fire-hydrant/309d6564a9.mp3",
+    "This one is MINE. 🔴": "voices/fire-hydrant/309d6564a9.mp3",
     "Property of all dogs. By law.": "voices/fire-hydrant/f99d5baba4.mp3",
     "I have claimed this officially.": "voices/fire-hydrant/9d3c485b61.mp3"
   },
@@ -281,7 +281,7 @@
     "Red = treat? Should mean treat.": "voices/stop-sign/dcd1f4c2ac.mp3"
   },
   "bench": {
-    "Sit here with my human. Yes. \u2764\ufe0f": "voices/bench/cb25be77fc.mp3",
+    "Sit here with my human. Yes. ❤️": "voices/bench/cb25be77fc.mp3",
     "Good walking rest spot. Approved.": "voices/bench/978af12be5.mp3"
   },
   "potted plant": {
@@ -297,7 +297,7 @@
     "Fragile. I am... mostly aware.": "voices/vase/806723238a.mp3"
   },
   "scissors": {
-    "GROOMING FLASHBACK. NO. \ud83d\udc3e": "voices/scissors/23514cb2c7.mp3",
+    "GROOMING FLASHBACK. NO. 🐾": "voices/scissors/23514cb2c7.mp3",
     "This means the trim is coming.": "voices/scissors/9f02e4d12e.mp3"
   },
   "hair drier": {
@@ -313,7 +313,7 @@
     "I knocked one over. Mostly accident.": "voices/wine-glass/900daa7d6c.mp3"
   },
   "bowl": {
-    "Empty?? MY BOWL IS EMPTY?? \ud83d\ude31": "voices/bowl/4232f84120.mp3",
+    "Empty?? MY BOWL IS EMPTY?? 😱": "voices/bowl/4232f84120.mp3",
     "Fill it. Fill it RIGHT NOW.": "voices/bowl/c0d85aec6b.mp3"
   },
   "fork": {
@@ -357,11 +357,32 @@
     "Mint flavored? I'd consider it.": "voices/toothbrush/30beb142ba.mp3"
   },
   "_default": {
-    "What IS this thing?? \ud83d\udc3e": "voices/-default/2b472307ee.mp3",
+    "What IS this thing?? 🐾": "voices/-default/2b472307ee.mp3",
     "I should sniff this.": "voices/-default/76aeebe3e7.mp3",
     "Interesting. Very interesting.": "voices/-default/4e60df86e6.mp3",
     "*intense sniffing sounds*": "voices/-default/1b97d32431.mp3",
     "Should I bark? I'll bark.": "voices/-default/b91c14dd3b.mp3",
     "My human would want to know about this.": "voices/-default/596030b3e8.mp3"
+  },
+  "dog_small": {
+    "NEW FRIEND!! I LOVE YOU!!": "voices/dog-small/dcc5a8e380.mp3",
+    "WHO ARE YOU I LOVE YOU": "voices/dog-small/1a2ef2aacb.mp3",
+    "Wanna sniff butts? I'll go first.": "voices/dog-small/cc86f732e4.mp3",
+    "YOU'RE ALSO A DOG!! WOW!!": "voices/dog-small/6745dd8610.mp3",
+    "Play?? LET'S PLAY!!": "voices/dog-small/ba408a296f.mp3",
+    "Another good boy detected 🐾": "voices/dog-small/3ab65a180e.mp3",
+    "I would die for you and I just met you.": "voices/dog-small/890e62f4a9.mp3",
+    "Hi hi hi hi hi hi hi!!": "voices/dog-small/3554b3809b.mp3",
+    "Best day ever. Best DAY ever.": "voices/dog-small/b0cf661d83.mp3",
+    "Look at your tail. LOOK AT IT.": "voices/dog-small/5e5a90b8a2.mp3",
+    "Race you?? I'll win. Or lose. Doesn't matter.": "voices/dog-small/e834aac435.mp3",
+    "Are you a dog?? I'M A DOG!!": "voices/dog-small/3ac8ad123b.mp3",
+    "Wanna chase squirrels together??": "voices/dog-small/a85c1ef3ea.mp3",
+    "I have a stick. You can have half.": "voices/dog-small/c67e30aab9.mp3",
+    "Same species!! What are the odds!!": "voices/dog-small/10894d3849.mp3",
+    "My human says I'm a good boy. Are you?": "voices/dog-small/0e1c059668.mp3",
+    "Let's roll in something gross together.": "voices/dog-small/4e91c786a0.mp3",
+    "Is it walk time? Is it walk time??": "voices/dog-small/18a72e8ace.mp3",
+    "I knew I'd love you the second I saw you.": "voices/dog-small/7239c02c2f.mp3"
   }
 }

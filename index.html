@@ -704,6 +704,12 @@
     }
 
     function lookupVoiceUrl(cls, quote) {
+      // Small-breed dogs get the Avery (Cartesia) voice — fall through to the
+      // default Antoni (ElevenLabs) dog clips if the small-dog MP3 is missing.
+      if (cls === 'dog' && (dogProfile === 'small-fluffy' || dogProfile === 'small-short')) {
+        const small = voiceManifest.dog_small && voiceManifest.dog_small[quote];
+        if (small) return small;
+      }
       return (voiceManifest[cls] && voiceManifest[cls][quote])
           || (voiceManifest._default && voiceManifest._default[quote])
           || null;

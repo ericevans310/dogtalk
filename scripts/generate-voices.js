@@ -1,14 +1,21 @@
 #!/usr/bin/env node
-// Pre-generate ElevenLabs MP3s for every quote in quotes.json.
+// Pre-generate TTS MP3s for every quote in quotes.json.
 //
 // Usage (run from repo root):
 //   node --env-file=.env scripts/generate-voices.js --dry-run   # show char totals, no API calls
 //   node --env-file=.env scripts/generate-voices.js --samples   # 1 mp3 per main class for voice approval
 //   node --env-file=.env scripts/generate-voices.js             # full generation (idempotent)
 //
+// Provider is chosen by TTS_PROVIDER env var (default: cartesia).
+// Each provider implements { name, apiKey, quotaInfo, voices, voiceBuckets,
+// defaultVoiceKey, tts(text, voiceId) → Buffer }.
+//
 // Output:
 //   voices/<class-slug>/<hash>.mp3
 //   voices/manifest.json   { "<class>": { "<original quote>": "voices/.../<hash>.mp3" } }
+//
+// Hash includes provider so a Cartesia run cannot collide with or overwrite
+// existing ElevenLabs-generated files, and vice versa.
 //
 // Quotes containing {NAME} are skipped — they fall back to speechSynthesis at runtime.
 
@@ -20,41 +27,115 @@ const REPO_ROOT  = path.resolve(__dirname, '..');
 const QUOTES     = path.join(REPO_ROOT, 'quotes.json');
 const VOICES_DIR = path.join(REPO_ROOT, 'voices');
 
-// ── Voice picks (edit here to change which ElevenLabs voice each class uses) ──
-// IDs are from ElevenLabs' default voice library. If any 404, swap in IDs from
-// your account at https://elevenlabs.io/app/voice-lab.
-const VOICES = {
-  dog:    { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni'   },  // energetic, warm
-  cat:    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily'     },  // British female
-  person: { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'     },  // neutral, deep
-  // Bucket voices for variety
-  charlie:  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie'  },  // animals
-  brian:    { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian'    },  // vehicles
-  matilda:  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda'  },  // food + tableware
-  daniel:   { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel'   },  // tech + appliances
-  arnold:   { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold'   },  // furniture/toys/outdoor
+const REQUEST_DELAY_MS = 100;
+
+// ─────────────────────────── Provider: ElevenLabs ───────────────────────────
+const ElevenLabsProvider = {
+  name: 'elevenlabs',
+  apiKey: () => process.env.ELEVENLABS_API_KEY,
+  quotaInfo: 'ElevenLabs free tier: 10,000 chars/month.',
+  voices: {
+    dog:    { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni'   },
+    cat:    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily'     },
+    person: { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'     },
+    charlie:  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie'  },
+    brian:    { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian'    },
+    matilda:  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda'  },
+    daniel:   { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel'   },
+    arnold:   { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold'   },
+  },
+  voiceBuckets: {
+    charlie: ['bird','horse','cow','sheep','elephant','bear','zebra','giraffe'],
+    brian:   ['car','motorcycle','bicycle','bus','truck','airplane','train','boat'],
+    matilda: ['pizza','hot dog','apple','banana','sandwich','cake','donut','broccoli','carrot','orange',
+              'bottle','wine glass','bowl','fork','knife','spoon','toothbrush'],
+    daniel:  ['toilet','sink','refrigerator','toaster','microwave','oven','tv','cell phone','laptop','keyboard','clock','hair drier'],
+    arnold:  ['bed','couch','chair','dining table','teddy bear','sports ball','frisbee','surfboard','baseball bat','tennis racket','skateboard',
+              'fire hydrant','stop sign','bench','potted plant','book','vase','scissors','backpack','suitcase','umbrella','tie','handbag'],
+  },
+  defaultVoiceKey: 'person',
+  async tts(text, voiceId) {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '');
+      throw new Error(`ElevenLabs ${res.status} ${res.statusText}: ${msg.slice(0, 300)}`);
+    }
+    return Buffer.from(await res.arrayBuffer());
+  },
 };
 
-// Bucket assignments — anything not listed here uses DEFAULT_VOICE.
-const VOICE_BUCKETS = {
-  charlie: ['bird','horse','cow','sheep','elephant','bear','zebra','giraffe'],
-  brian:   ['car','motorcycle','bicycle','bus','truck','airplane','train','boat'],
-  matilda: ['pizza','hot dog','apple','banana','sandwich','cake','donut','broccoli','carrot','orange',
-            'bottle','wine glass','bowl','fork','knife','spoon','toothbrush'],
-  daniel:  ['toilet','sink','refrigerator','toaster','microwave','oven','tv','cell phone','laptop','keyboard','clock','hair drier'],
-  arnold:  ['bed','couch','chair','dining table','teddy bear','sports ball','frisbee','surfboard','baseball bat','tennis racket','skateboard',
-            'fire hydrant','stop sign','bench','potted plant','book','vase','scissors','backpack','suitcase','umbrella','tie','handbag'],
+// ──────────────────────────── Provider: Cartesia ────────────────────────────
+// Voice IDs from https://api.cartesia.ai/voices?language=en (live library).
+const CartesiaProvider = {
+  name: 'cartesia',
+  apiKey: () => process.env.CARTESIA_API_KEY,
+  quotaInfo: 'Cartesia free tier: 10,000 credits/month (1 credit per character).',
+  voices: {
+    dog:       { id: 'e00d0e4c-a5c8-443f-a8a3-473eb9a62355', name: 'Zeke'  },  // high-pitched, friendly, character-y
+    dog_small: { id: 'cccc21e8-5bcf-4ff0-bc7f-be4e40afc544', name: 'Avery' },  // high-pitched energetic young female — small-dog variant
+    cat:       { id: '999df508-4de5-40a7-8bd3-8c12f678c284', name: 'Layla' },  // chill, smooth, dry
+    person:    { id: 'a0e99841-438c-4a64-b679-ae501e7d6091', name: 'Greg'  },  // neutral, deep, warm
+  },
+  voiceBuckets: {},  // no bucketing yet for Cartesia — everything else uses defaultVoiceKey
+  defaultVoiceKey: 'person',
+  async tts(text, voiceId) {
+    const res = await fetch('https://api.cartesia.ai/tts/bytes', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.CARTESIA_API_KEY,
+        'Cartesia-Version': '2026-03-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model_id: 'sonic-3',
+        transcript: text,
+        voice: { mode: 'id', id: voiceId },
+        output_format: { container: 'mp3', sample_rate: 44100, bit_rate: 128000 },
+        language: 'en',
+      }),
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '');
+      throw new Error(`Cartesia ${res.status} ${res.statusText}: ${msg.slice(0, 300)}`);
+    }
+    return Buffer.from(await res.arrayBuffer());
+  },
 };
-const CLASS_TO_VOICE = {};
-for (const [voiceKey, classes] of Object.entries(VOICE_BUCKETS)) {
-  for (const cls of classes) CLASS_TO_VOICE[cls] = VOICES[voiceKey];
+
+const PROVIDERS = { elevenlabs: ElevenLabsProvider, cartesia: CartesiaProvider };
+const PROVIDER_KEY = process.env.TTS_PROVIDER || 'cartesia';
+const provider = PROVIDERS[PROVIDER_KEY];
+
+// Virtual classes: reuse an existing quote pool under a different class key so
+// a variant voice (e.g. Avery for small dogs) can be generated alongside the
+// original. Only emitted when the active provider defines the virtual voice.
+const VIRTUAL_CLASSES = {
+  dog_small: 'dog',
+};
+if (!provider) {
+  console.error(`Unknown TTS_PROVIDER "${PROVIDER_KEY}". Set TTS_PROVIDER to one of: ${Object.keys(PROVIDERS).join(', ')}.`);
+  process.exit(1);
 }
 
-const DEFAULT_VOICE = VOICES.person; // person + DEFAULT_QUOTES + anything unbucketed
-
-const MODEL_ID = 'eleven_multilingual_v2';
-const API_BASE = 'https://api.elevenlabs.io/v1/text-to-speech';
-const REQUEST_DELAY_MS = 100;
+// Per-provider voice resolution
+const VOICES = provider.voices;
+const CLASS_TO_VOICE = {};
+for (const [voiceKey, classes] of Object.entries(provider.voiceBuckets)) {
+  for (const cls of classes) CLASS_TO_VOICE[cls] = VOICES[voiceKey];
+}
+const DEFAULT_VOICE = VOICES[provider.defaultVoiceKey];
 
 function stripEmoji(s) {
   return s
@@ -67,8 +148,12 @@ function slugClass(cls) {
   return cls.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
 
+// Provider name is part of the hash so different providers' files for the
+// same quote never collide on disk.
 function hashKey(cls, text, voiceId) {
-  return crypto.createHash('sha1').update(`${cls}|${text}|${voiceId}`).digest('hex').slice(0, 10);
+  return crypto.createHash('sha1')
+    .update(`${cls}|${text}|${provider.name}|${voiceId}`)
+    .digest('hex').slice(0, 10);
 }
 
 function voiceFor(cls) {
@@ -76,24 +161,7 @@ function voiceFor(cls) {
 }
 
 async function tts(text, voiceId) {
-  const res = await fetch(`${API_BASE}/${voiceId}`, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': process.env.ELEVENLABS_API_KEY,
-      'Content-Type': 'application/json',
-      'Accept': 'audio/mpeg',
-    },
-    body: JSON.stringify({
-      text,
-      model_id: MODEL_ID,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-    }),
-  });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => '');
-    throw new Error(`ElevenLabs ${res.status} ${res.statusText}: ${msg.slice(0, 300)}`);
-  }
-  return Buffer.from(await res.arrayBuffer());
+  return provider.tts(text, voiceId);
 }
 
 function loadQuotes() {
@@ -105,6 +173,11 @@ function* allItems(data) {
     for (const quote of pool) yield { cls, quote };
   }
   for (const quote of data.defaults) yield { cls: '_default', quote };
+  for (const [virtualCls, sourceCls] of Object.entries(VIRTUAL_CLASSES)) {
+    if (!provider.voices[virtualCls]) continue;
+    const pool = data.quotes[sourceCls] || [];
+    for (const quote of pool) yield { cls: virtualCls, quote };
+  }
 }
 
 async function runDryRun() {
@@ -120,12 +193,13 @@ async function runDryRun() {
     const v = voiceFor(cls).name;
     perVoice[v] = (perVoice[v] || 0) + clean.length;
   }
+  console.log(`Provider:         ${provider.name}`);
   console.log(`Voiceable quotes: ${voiceable}`);
   console.log(`Skipped (contain {NAME}): ${namedSkipped}`);
   console.log(`Total characters: ${total}`);
   console.log(`Per voice:`);
   for (const [v, n] of Object.entries(perVoice)) console.log(`  ${v}: ${n} chars`);
-  console.log(`\nElevenLabs free tier is 10,000 chars/month. Re-runs of this script skip files that already exist.`);
+  console.log(`\n${provider.quotaInfo} Re-runs of this script skip files that already exist.`);
 }
 
 async function runSamples() {
@@ -141,10 +215,10 @@ async function runSamples() {
   for (const s of samples) {
     const v = voiceFor(s.cls);
     const text = stripEmoji(s.quote);
-    console.log(`[${s.cls}] voice=${v.name} text="${text}"`);
+    console.log(`[${s.cls}] provider=${provider.name} voice=${v.name} text="${text}"`);
     try {
       const mp3 = await tts(text, v.id);
-      const file = path.join(outDir, `${s.cls}.mp3`);
+      const file = path.join(outDir, `${provider.name}-${s.cls}.mp3`);
       fs.writeFileSync(file, mp3);
       console.log(`  → ${path.relative(REPO_ROOT, file)}  (${mp3.length} bytes)`);
     } catch (e) {
@@ -154,26 +228,49 @@ async function runSamples() {
     await new Promise(r => setTimeout(r, REQUEST_DELAY_MS));
   }
   if (failures.length) {
-    console.log(`\n${failures.length} voice(s) need swapping in scripts/generate-voices.js:`);
+    console.log(`\n${failures.length} voice(s) need swapping in ${provider.name} provider config:`);
     failures.forEach(f => console.log(`  - ${f.cls} → ${f.voice}`));
   }
   console.log(`\nDone. Listen to:`);
-  console.log(`  open voices/samples/dog.mp3 voices/samples/cat.mp3 voices/samples/person.mp3`);
+  const paths = samples.map(s => `voices/samples/${provider.name}-${s.cls}.mp3`).join(' ');
+  console.log(`  open ${paths}`);
 }
 
-async function runFull() {
+async function runFull(onlyClasses) {
   const data = loadQuotes();
-  const manifest = {};
+
+  // Preserve entries for classes we're not regenerating (e.g. Antoni dog MP3s
+  // stay put when we're only running dog_small).
+  const manifestPath = path.join(VOICES_DIR, 'manifest.json');
+  let manifest = {};
+  if (onlyClasses) {
+    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+    for (const c of onlyClasses) delete manifest[c];
+  }
+
   let generated = 0, cached = 0, namedSkipped = 0, errors = 0, fellBack = 0;
   let quotaHit = false;
 
-  // Returns the relPath for the Adam-voiced version of this quote if that
-  // file already exists on disk, or null otherwise.
-  function adamFallback(cls, clean) {
+  // Returns the relPath for a default-voice version of this quote that already
+  // exists on disk (under either provider's hash), or null otherwise.
+  // Lets us keep iPhone TTS working when the active provider hits quota.
+  function fallback(cls, clean) {
     const slug = slugClass(cls);
-    const adamHash = hashKey(cls, clean, DEFAULT_VOICE.id);
-    const rel = `voices/${slug}/${adamHash}.mp3`;
-    return fs.existsSync(path.join(REPO_ROOT, rel)) ? rel : null;
+    // Try active-provider default voice first.
+    const activeFallback = `voices/${slug}/${hashKey(cls, clean, DEFAULT_VOICE.id)}.mp3`;
+    if (fs.existsSync(path.join(REPO_ROOT, activeFallback))) return activeFallback;
+    // Then any other provider's default voice for the same class+quote.
+    for (const otherKey of Object.keys(PROVIDERS)) {
+      if (otherKey === provider.name) continue;
+      const other = PROVIDERS[otherKey];
+      const otherDefault = other.voices[other.defaultVoiceKey];
+      const otherHash = crypto.createHash('sha1')
+        .update(`${cls}|${clean}|${other.name}|${otherDefault.id}`)
+        .digest('hex').slice(0, 10);
+      const otherPath = `voices/${slug}/${otherHash}.mp3`;
+      if (fs.existsSync(path.join(REPO_ROOT, otherPath))) return otherPath;
+    }
+    return null;
   }
 
   function recordManifest(cls, quote, relPath) {
@@ -182,6 +279,7 @@ async function runFull() {
   }
 
   for (const { cls, quote } of allItems(data)) {
+    if (onlyClasses && !onlyClasses.has(cls)) continue;
     if (quote.includes('{NAME}')) { namedSkipped++; continue; }
     const clean = stripEmoji(quote);
     if (!clean) continue;
@@ -198,9 +296,8 @@ async function runFull() {
       continue;
     }
 
-    // If quota's already exhausted, don't bother calling — fall straight back.
     if (quotaHit) {
-      const fb = adamFallback(cls, clean);
+      const fb = fallback(cls, clean);
       if (fb) { recordManifest(cls, quote, fb); fellBack++; }
       continue;
     }
@@ -216,13 +313,11 @@ async function runFull() {
     } catch (e) {
       errors++;
       console.error(`  ! [${cls}] FAILED "${clean}" → ${e.message}`);
-      // On auth/quota errors, switch to fallback-only mode for the remainder
-      // so we still produce a complete manifest pointing to whatever exists.
       if (/401|402|403|429/.test(e.message)) {
         console.error('Quota/auth error — finishing in fallback-only mode (no more API calls).');
         quotaHit = true;
       }
-      const fb = adamFallback(cls, clean);
+      const fb = fallback(cls, clean);
       if (fb) { recordManifest(cls, quote, fb); fellBack++; }
     }
   }
@@ -232,28 +327,38 @@ async function runFull() {
     JSON.stringify(manifest, null, 2)
   );
 
-  console.log(`\nGenerated:    ${generated}`);
+  console.log(`\nProvider:     ${provider.name}`);
+  console.log(`Generated:    ${generated}`);
   console.log(`Already had:  ${cached}`);
-  console.log(`Adam fallback:${fellBack}`);
+  console.log(`Fallback:     ${fellBack}`);
   console.log(`Skipped name: ${namedSkipped}`);
   console.log(`Errors:       ${errors}`);
   console.log(`Manifest:     ${path.relative(REPO_ROOT, path.join(VOICES_DIR, 'manifest.json'))}`);
 }
 
 async function main() {
-  const mode = process.argv[2];
-  if (mode === '--dry-run') return runDryRun();
+  const argv = process.argv.slice(2);
+  if (argv.includes('--dry-run')) return runDryRun();
 
-  if (!process.env.ELEVENLABS_API_KEY) {
-    console.error('Missing ELEVENLABS_API_KEY.');
-    console.error('Run with:  node --env-file=.env scripts/generate-voices.js [--samples|--dry-run]');
+  if (!provider.apiKey()) {
+    const envName = provider.name === 'cartesia' ? 'CARTESIA_API_KEY' : 'ELEVENLABS_API_KEY';
+    console.error(`Missing ${envName}.`);
+    console.error(`Run with:  node --env-file=.env scripts/generate-voices.js [--samples|--dry-run|--only <cls>]`);
     process.exit(1);
   }
 
   fs.mkdirSync(VOICES_DIR, { recursive: true });
 
-  if (mode === '--samples') return runSamples();
-  return runFull();
+  if (argv.includes('--samples')) return runSamples();
+
+  let onlyClasses = null;
+  const onlyIdx = argv.indexOf('--only');
+  if (onlyIdx !== -1) {
+    const val = argv[onlyIdx + 1];
+    if (!val) { console.error('--only requires a comma-separated class list'); process.exit(1); }
+    onlyClasses = new Set(val.split(',').map(s => s.trim()).filter(Boolean));
+  }
+  return runFull(onlyClasses);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
