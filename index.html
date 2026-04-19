@@ -292,6 +292,14 @@
         <button class="gender-btn selected" id="btn-boy" data-g="boy">🐶 Boy</button>
         <button class="gender-btn" id="btn-girl" data-g="girl">🎀 Girl</button>
       </div>
+      <label for="dog-profile-select" style="display:block;margin-top:14px;color:#bbb;font-size:13px;">My dog looks like:</label>
+      <select id="dog-profile-select" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;background:#222;color:#fff;border:1px solid #444;">
+        <option value="big-dog">Big dog</option>
+        <option value="medium-dog">Medium dog</option>
+        <option value="small-fluffy">Small fluffy dog (Maltipoo, Bichon, etc.)</option>
+        <option value="small-short">Short-haired small dog</option>
+        <option value="mutt-other">Mutt / other</option>
+      </select>
       <button class="modal-primary-btn" id="name-submit">Let's go! 🐾</button>
       <button class="modal-close-btn" id="name-cancel" style="display:none">Cancel</button>
       <button class="modal-close-btn" id="open-voice-lab-btn" style="color:#FFD700;margin-top:8px;display:none">🎤 Voice Lab</button>
@@ -495,9 +503,9 @@
     // ── MobileNet label → sound category mapping ──────────────────────────────
     function mobilenetCategory(className) {
       const s = className.toLowerCase();
-      const dogTerms = ['retriever','labrador','spaniel','terrier','shepherd','sheepdog','poodle','bulldog','schnauzer','setter','pointer','mastiff','boxer','rottweiler','doberman','husky','malamute','samoyed','pomeranian','chihuahua','beagle','basset','bloodhound','dachshund','dalmatian','pug','basenji','borzoi','greyhound','whippet','saluki','vizsla','collie','kelpie','briard','malinois','groenendael','komondor','kuvasz','weimaraner','rhodesian','afghan','wolfhound','deerhound','elkhound','otterhound','redbone','bluetick','great dane','great pyrenees','saint bernard','newfoundland','leonberg','appenzeller','entlebucher','bouvier','schipperke','keeshond','chow','dingo','dhole','african hunting dog'];
+      const dogTerms = ['retriever','labrador','spaniel','terrier','shepherd','sheepdog','poodle','bulldog','schnauzer','setter','pointer','mastiff','boxer','rottweiler','doberman','husky','malamute','samoyed','pomeranian','chihuahua','beagle','basset','bloodhound','dachshund','dalmatian','pug','basenji','borzoi','greyhound','whippet','saluki','vizsla','collie','kelpie','briard','malinois','groenendael','komondor','kuvasz','weimaraner','rhodesian','afghan','wolfhound','deerhound','elkhound','otterhound','redbone','bluetick','great dane','great pyrenees','saint bernard','newfoundland','leonberg','appenzeller','entlebucher','bouvier','schipperke','keeshond','chow','dingo','dhole','african hunting dog','maltese','bichon','shih','yorkie','havanese','coton','papillon','lhasa','pekinese','pekingese','toy spaniel','japanese spaniel'];
       if (dogTerms.some(t => s.includes(t))) return 'dog';
-      if (/tabby|persian cat|siamese cat|egyptian cat|tiger cat/.test(s)) return 'cat';
+      if (/tabby|persian cat|siamese cat|egyptian cat|tiger cat|angora/.test(s)) return 'cat';
       const birdTerms = ['robin','finch','bunting','eagle','hawk','owl','vulture','pelican','flamingo','crane','heron','egret','albatross','penguin','parrot','macaw','cockatoo','hen','rooster','turkey','duck','goose','swan','jay','magpie','crow','raven','sparrow','warbler','chickadee','bulbul','kite','condor','osprey','ostrich','goldfinch','junco'];
       if (birdTerms.some(t => s.includes(t))) return 'bird';
       if (/sports car|racing car|convertible|limousine|beach wagon|station wagon|minivan|jeep/.test(s)) return 'car';
@@ -998,6 +1006,25 @@
     let detecting = false, detectBusy = false, started = false;
     let mnFrameCount = 0;
 
+    // User's dog profile — biases detection toward small fluffy breeds that
+    // COCO-SSD/MobileNet often misread as cats. See openNameModal for UI.
+    let dogProfile = localStorage.getItem('dogProfile') || 'medium-dog';
+
+    // IoU between two [x,y,w,h] bboxes (COCO-SSD format).
+    function iou(a, b) {
+      const [ax, ay, aw, ah] = a, [bx, by, bw, bh] = b;
+      const x1 = Math.max(ax, bx), y1 = Math.max(ay, by);
+      const x2 = Math.min(ax + aw, bx + bw), y2 = Math.min(ay + ah, by + bh);
+      const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+      const union = aw * ah + bw * bh - inter;
+      return union > 0 ? inter / union : 0;
+    }
+
+    // ImageNet labels that visually overlap with small fluffy dogs.
+    function mobilenetIsCatClass(name) {
+      return /tabby|persian cat|siamese cat|egyptian cat|tiger cat|angora|lynx/i.test(name);
+    }
+
     // Debug overlay: enabled via ?debug=1 URL param or Voice Lab toggle
     let debugMode = new URLSearchParams(location.search).get('debug') === '1'
                  || localStorage.getItem('debugMode') === 'true';
@@ -1054,10 +1081,34 @@
           const vh = video.videoHeight || 240;
           const maxDist = Math.sqrt((vw / 2) ** 2 + (vh / 2) ** 2) || 1;
 
-          // 1. Filter by tier minConf; compute centerness-weighted score
+          // 0. Dog-vs-cat disambiguation. COCO-SSD often double-fires on small
+          // fluffy dogs (Maltipoo etc.) — one "dog" box and one "cat" box on
+          // the same animal. Suppress the cat when it overlaps a dog.
+          // small-fluffy mode: any qualifying dog suppresses every cat.
+          {
+            const aggressive = dogProfile === 'small-fluffy';
+            const dogs = preds.filter(p => p.class === 'dog' && p.score >= 0.35);
+            const cats = preds.filter(p => p.class === 'cat' && p.score >= 0.35);
+            for (const cat of cats) {
+              const overlapDog = dogs.find(d => aggressive || iou(d.bbox, cat.bbox) > 0.5);
+              if (overlapDog) {
+                cat._suppressed = true;
+                overlapDog.score = Math.min(0.99, overlapDog.score + 0.1);
+              }
+            }
+          }
+
+          // 1. Filter by tier minConf; compute centerness-weighted score.
+          // small-fluffy mode also drops the dog tier-1 minConf by 0.05 so a
+          // marginal dog read is more likely to lock.
+          const fluffyDogBoost = dogProfile === 'small-fluffy';
           const frameDetections = preds.map(p => {
+            if (p._suppressed) return null;
             const tier = getTier(p.class);
-            if (p.score < TIER_CONFIG[tier].minConf) return null;
+            const minConf = (p.class === 'dog' && fluffyDogBoost)
+              ? Math.max(0, TIER_CONFIG[tier].minConf - 0.05)
+              : TIER_CONFIG[tier].minConf;
+            if (p.score < minConf) return null;
             const [bx, by, bw, bh] = p.bbox;
             const cx = bx + bw / 2, cy = by + bh / 2;
             const centerness = Math.max(0, 1 - Math.sqrt((cx - vw/2)**2 + (cy - vh/2)**2) / maxDist);
@@ -1190,19 +1241,36 @@
                 try {
                   const results = await mnModel.classify(cropCanvas, 3);
                   if (results.length > 0 && results[0].probability >= 0.25) {
-                    const mnCls  = mobilenetCategory(results[0].className);
-                    const pretty = prettyLabel(results[0].className);
-                    if (mnCls === activeClass || mnCls === null) {
-                      activeLabel = pretty;
-                    } else if (mnCls && results[0].probability >= 0.55 && canOverride(getTier(mnCls))) {
-                      activeClass     = mnCls;
-                      activeTier      = getTier(mnCls);
-                      activeLabel     = pretty;
-                      activeQuote     = pickQuote(mnCls);
-                      activeLockedAt  = Date.now();
-                      lastSpokenQuote = null;
-                      soundsSinceQuoteRotate = 0;
-                      checkDiscovery(mnCls);
+                    let chosen = results[0];
+
+                    // COCO-SSD locked us to dog: never let MN demote that to
+                    // cat. Prefer a dog-mapped result lower in the top-3, or
+                    // fall back to a generic "Pup" label and skip override.
+                    if (activeClass === 'dog' && mobilenetIsCatClass(chosen.className)) {
+                      const dogResult = results.find(r => mobilenetCategory(r.className) === 'dog');
+                      if (dogResult) {
+                        chosen = dogResult;
+                      } else {
+                        activeLabel = 'Pup';
+                        chosen = null;
+                      }
+                    }
+
+                    if (chosen) {
+                      const mnCls  = mobilenetCategory(chosen.className);
+                      const pretty = prettyLabel(chosen.className);
+                      if (mnCls === activeClass || mnCls === null) {
+                        activeLabel = pretty;
+                      } else if (mnCls && chosen.probability >= 0.55 && canOverride(getTier(mnCls))) {
+                        activeClass     = mnCls;
+                        activeTier      = getTier(mnCls);
+                        activeLabel     = pretty;
+                        activeQuote     = pickQuote(mnCls);
+                        activeLockedAt  = Date.now();
+                        lastSpokenQuote = null;
+                        soundsSinceQuoteRotate = 0;
+                        checkDiscovery(mnCls);
+                      }
                     }
                   }
                 } catch {}
@@ -1225,7 +1293,7 @@
               ? Math.max(0, ((TIER_CONFIG[activeTier]?.holdTimeMs || 0) - (Date.now() - activeLockedAt)) / 1000).toFixed(1)
               : '–';
             document.getElementById('dbg-active').textContent =
-              `▶ ${activeClass || '(none)'} T${activeTier || '–'}  absent:${activeAbsentFrames}  hold:${holdRemain}s`;
+              `▶ ${activeClass || '(none)'} T${activeTier || '–'}  absent:${activeAbsentFrames}  hold:${holdRemain}s  profile:${dogProfile}`;
             document.getElementById('dbg-top3').textContent =
               top3.map(([cls, s]) =>
                 `${cls}:${s.votes}/${TIER_CONFIG[s.tier].voteThresh}(T${s.tier})`
@@ -1248,6 +1316,7 @@
       selectedGender = localStorage.getItem('dogGender') || 'boy';
       btnBoy.classList.toggle('selected', selectedGender === 'boy');
       btnGirl.classList.toggle('selected', selectedGender === 'girl');
+      document.getElementById('dog-profile-select').value = dogProfile;
       nameCancelBtn.style.display = fromSettings ? 'block' : 'none';
       document.getElementById('open-voice-lab-btn').style.display = fromSettings ? 'block' : 'none';
       nameModal.classList.add('open');
@@ -1266,6 +1335,8 @@
       if (!name) { dogNameInput.focus(); return; }
       localStorage.setItem('dogName', name);
       localStorage.setItem('dogGender', selectedGender);
+      dogProfile = document.getElementById('dog-profile-select').value;
+      localStorage.setItem('dogProfile', dogProfile);
       closeNameModal();
       tapTitle.textContent = `${name} wants to talk!`;
       if (!started) tapOverlay.style.display = 'flex';
