@@ -610,9 +610,32 @@
       return quote.replace(/\{NAME\}/g, getDogName());
     }
 
+    // Per-class "what just played" memory — covers both sounds and quotes
+    // jointly so the same item won't repeat until at least RECENT_WINDOW other
+    // items (any mix of sounds + speech) for that class have played.
+    const RECENT_WINDOW = 4;
+    const recentPlays = {}; // cls → [{ kind:'sound'|'quote', id }]
+    function rememberPlay(cls, kind, id) {
+      if (!cls || !id) return;
+      if (!recentPlays[cls]) recentPlays[cls] = [];
+      recentPlays[cls].push({ kind, id });
+      while (recentPlays[cls].length > RECENT_WINDOW * 2) recentPlays[cls].shift();
+    }
+    function recentIds(cls, kind) {
+      const hist = recentPlays[cls] || [];
+      const win  = hist.slice(-RECENT_WINDOW);
+      const out = new Set();
+      for (const h of win) if (h.kind === kind) out.add(h.id);
+      return out;
+    }
+
     function pickQuote(cls) {
       const pool = QUOTES_MAP[cls] || DEFAULT_QUOTES;
-      return pool[Math.floor(Math.random() * pool.length)];
+      if (!pool.length) return null;
+      const recent = recentIds(cls, 'quote');
+      const fresh = pool.filter(q => !recent.has(q));
+      const candidates = fresh.length ? fresh : pool;
+      return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
     // ── Sound map ─────────────────────────────────────────────────────────────
@@ -901,7 +924,11 @@
       if (!entry) return null;
       const files = typeof entry === 'string' ? [entry] : entry;
       const avail = files.filter(f => bufferCache[f]);
-      return avail.length ? avail[Math.floor(Math.random() * avail.length)] : null;
+      if (!avail.length) return null;
+      const recent = recentIds(cls, 'sound');
+      const fresh = avail.filter(f => !recent.has(f));
+      const candidates = fresh.length ? fresh : avail;
+      return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
     async function playSound(cls) {
@@ -930,6 +957,7 @@
           const maxOffset = buf.duration > 4 ? Math.min(2, buf.duration - 3) : 0;
           const startOffset = maxOffset > 0 ? Math.random() * maxOffset : 0;
           lastPlayedFile = file; lastPlayedTime = now;
+          rememberPlay(capturedClass, 'sound', file);
           await new Promise(resolve => {
             const source = audioCtx.createBufferSource();
             source.buffer = buf;
@@ -954,6 +982,7 @@
         }
 
         if (speakable && activeClass === capturedClass) {
+          rememberPlay(capturedClass, 'quote', capturedQuote);
           await speakQuote(capturedQuote, capturedClass);
         }
       } finally {
